@@ -142,7 +142,7 @@ def get_seq_len(ref_fasta):
 def scaleLocally(a, sz):
 	normWinSz=sz
 	n = (normWinSz/2)+1 # eg win 64 -> n == 33
-	start = scale(a[ : normWinSz+1 ])[:n] 
+	start = scale(a[ : normWinSz+1 ])[:n]
 	end   = scale(a[ -(normWinSz+1) : ])[-n:]
 	mid = [ scale(a[i-n:i+n])[n] for i in range(n,len(a)-n) ]
 	a = np.hstack([start, mid, end])
@@ -150,14 +150,14 @@ def scaleLocally(a, sz):
 	#exit()
 
 	#a = np.hstack(map(scale, split(a, sz)))
-	return a 
-    
-def scale(a): 
+	return a
+
+def scale(a):
 	'''
 	return my_scale(a)
 	'''
-	return sklearn.preprocessing.scale(a, axis=0, with_mean=True, with_std=True, copy=True) 
-        
+	return sklearn.preprocessing.scale(a, axis=0, with_mean=True, with_std=True, copy=True)
+
 ######################################################
 def process_ref_fasta_raw(ref_fasta,model_kmer_means,args):
     if (args.verbose is True):
@@ -697,7 +697,7 @@ def amplicon_worker((channel_name, data,seqlen,readstarttime,kmerhash_subset,cor
                 if (args.verbose is True):
                     print channel_name
                 corrected_channel = int(channel_name)
-                
+
                 if (np.random.uniform(0,9,1)>=0 and result == "Sequence"):
                     #print "Corrected channel:",type(corrected_channel),corrected_channel
                     #print "Read Number:",type(data.read_number),data.read_number
@@ -829,11 +829,11 @@ def checkevents(meansquiggle,meantime,channel_name,eventdict,readnumber):
 #def process_fast5(filepath, hdf,eventdict,procampresfile,procampres2d):
 def process_fast5((filepath,eventdict,procampresfile,procampres2d)):
     #print "Process fast5 called!"
-    
+
     hdf = h5py.File(filepath, 'r')
-    
+
     channel_name=hdf["UniqueGlobalKey/channel_id"].attrs['channel_number']
-    
+
     if (args.verbose is True):
         print "Processing:", channel_name
     corrected_channel = channel_name
@@ -950,7 +950,7 @@ class MyHandler(FileSystemEventHandler):
         self.running = True
         #threading.set_profile(stats)
         t = threading.Thread(target=self.processfiles)
-        
+
         t.daemon = True
         try:
             t.start()
@@ -1006,11 +1006,11 @@ class MyHandler(FileSystemEventHandler):
         if ("muxscan" not in event.src_path and event.src_path.endswith(".fast5")):
             self.creates[event.src_path] = time.time()
         #self.total[event.src_path] = time.time()
-        
+
     def on_moved(self,event):
         if ("muxscan" not in event.dest_path and event.dest_path.endswith(".fast5")):
             self.creates[event.dest_path] = time.time()
-        
+
 
 
 
@@ -1148,11 +1148,11 @@ def run_analysis(args,procampres2d,customdepthslist):
     analyser = MyAnalyser()
     host = "ws://"+str(args.ip)+":"+str(args.port)+"/"
     #host = "ws://127.0.0.1:5999/"
-    setup_conditions = {"ignore_first_events": 100, "padding_length_events": 0,
-                    "events_length": 32, "repetitions": 1}
+    setup_conditions = {"ignore_first_events": 50, "padding_length_events": 0,
+                    "events_length": 250, "repetitions": 1}
 
     state=RunningState()
-    
+
 
 
     with ReadUntil(host=host,
@@ -1435,7 +1435,7 @@ def main_function():
 
     for sequence in ranges:
         ranges[sequence] = list(merge_ranges((ranges[sequence])))
-    
+
     global correctedamplicons
     correctedamplicons=list()
     for amplicon in amplicons:
