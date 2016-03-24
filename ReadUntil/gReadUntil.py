@@ -3,7 +3,7 @@ import time
 import errno
 from socket import error as socket_error
 import threading
-import MySQLdb
+#import MySQLdb
 import sys, os, re
 from Bio import SeqIO
 from StringIO import StringIO
