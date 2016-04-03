@@ -1,5 +1,7 @@
 # RUscripts
 
+This readme file is also available at http://mattloose.github.io/RUscripts
+
 To get started either download this repository using the ZIP options or (preferably)
 
 git clone https://github.com/mattloose/RUscripts
