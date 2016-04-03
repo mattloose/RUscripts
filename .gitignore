@@ -1,3 +1,8 @@
 template.model
 complement.model
 testout/
+ReadUntil/event_sampler/
+ReadUntil/event_sampler.thrift
+ReadUntil/read_until.py
+ReadUntil/read_until.pyc
+ReadUntil/ws4py.log
