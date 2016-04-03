@@ -71,6 +71,8 @@ sklearn #Available as default with Anaconda
 
     C:\path\to\RUscripts>easy_install thrift ws4py h5py configargparse biopython watchdog
 
+NOTE: You may need to add C:\Anaconda\Scripts to your path to access easy_install and pip.
+
 # To install mlpy
 
 Installing mlpy with easy_install results in a version less than that required. To overcome this on windows systems visit http://www.lfd.uci.edu/~gohlke/pythonlibs/#mlpy to obtain an mlpy wheel compiled for the appropriate version of windows and python.
@@ -129,7 +131,7 @@ ReadUntil\lambda_amplicons.fasta - This is a reference file containing copies of
 
 ReadUntil\ruutils.py - This file contains a number of useful functions for various scripts. It will never be run itself but is called by many of the other scripts.
 
-test_gReadUntil.py - A script for testing the functionality of gReadUntil.py in the absence of the API itself. 
+test_gReadUntil.py - A script for testing the functionality of gReadUntil.py in the absence of the API itself.
 
 RUtestset (folder - contains 55 example fast5 files)
 
@@ -551,7 +553,7 @@ Copy the following files and folders (and there contents) into the RUscripts\Rea
 
     read_until.py
 	event_sampler.thrift
-    event_sampler/*
+    event_sampler/* (note - you need to copy the folder and its contents)
     example.py
 
 # Running ws_event_sampler
@@ -561,6 +563,8 @@ Read until works by streaming data from minKNOW during a run to an external anal
     C:\grouper\binaries\bin
 
 which is available after installing minKNOW.
+
+ws_event_sampler can run either stand alone in simulation mode, or alongside minKNOW as it is running. For simulations, we suggest you start minKNOW and have it open (but not actually sequencing). Then start ws_event_sampler in simluation mode. In this way you will see the output from our scripts in the minKNOW messages window.
 
 Running ws_event_sampler is done as follows:
 
@@ -1435,9 +1439,18 @@ You can then run any of the script options above to try aReadUntil.
 
 COMMON FAILURES.
 
-1) ws_event_sampler crashes: If ws_event_sampler crashes, the read until scripts will no longer 'see' the events and thus the sequencer will sequence all reads regardless of where they map too. The scripts alert you to a dropped connection with the message "Hanging around waiting for server". You should check for this periodically. We hope that ws_event_sampler will become more stable over time.
+1) ws_event_sampler crashes: If ws_event_sampler crashes, the read until scripts will no longer 'see' the events and thus the sequencer will sequence all reads regardless of where they map too. The scripts alert you to a dropped connection with the message "Hanging around waiting for server". You should check for this periodically. We hope that ws_event_sampler will become more stable over time. ws_event_sampler can be restarted at any point to restart capturing data.
+
 2) Processor timeouts: If the load on the CPU is too high, reads will 'timeout'. This will result in a loss of selective sequencing.
+
 3) Missing amplicons: If an amplicon is entirely missing from a sample, read until will never complete. It is wise to carefully observe a run and check this hasn't occurred.
+
+Less Common Failures
+
+Rarely aReadUntil.py will crash. At this time, aReadUntil does not recover from a crash such that a read until run can be continued. Essentially if the script crashes it loses track of where it was at. We hope to add this functionality in the near future. However, aReadUntil.py has been reasonably stable to date.
+
+
+Usage Examples
 
 To monitor a run without implementing read until, alerting when you have 40x coverage of each amplicon:
 
