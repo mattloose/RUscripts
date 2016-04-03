@@ -2,6 +2,8 @@
 
 This readme file is also available at http://mattloose.github.io/RUscripts
 
+The scripts here are referenced by the paper available at http://biorxiv.org/content/early/2016/02/03/038760
+
 To get started either download this repository using the ZIP options or (preferably)
 
 git clone https://github.com/mattloose/RUscripts
