@@ -1,9 +1,8 @@
-from read_until import ReadUntil
+#from read_until import ReadUntil
 import time
 import errno
 from socket import error as socket_error
 import threading
-import MySQLdb
 import sys, os, re
 from Bio import SeqIO
 from StringIO import StringIO
@@ -24,22 +23,40 @@ import re
 import logging
 import glob
 import h5py
+import platform
+
+from ruutils import process_model_file
+
+global oper
+
+oper = platform.system()
+if oper is 'Windows':  # MS
+    oper = 'windows'
+else:
+    oper = 'linux'  # MS
 
 
-#import _ucrdtw
-#from fastdtw import fastdtw, dtw
+## linux version
+if (oper is "linux"):
+        config_file = os.path.join(os.path.sep, os.path.dirname(os.path.realpath('__file__')), 'amp.config')
+
+## linux version
+if (oper is "windows"):
+        config_file = os.path.join(os.path.sep, os.path.dirname(os.path.realpath('__file__')), 'ampW.config')
+
+__version__ = "1.0"
+__date__ = "30th March 2016"
 
 parser = configargparse.ArgParser(description='real_read_until: A program providing read until with the Oxford Nanopore minION device. This program will ultimately be driven by minoTour to enable selective remote sequencing. This program is heavily based on original code generously provided by Oxford Nanopore Technologies.')
 parser.add('-fasta', '--reference_fasta_file', type=str, dest='fasta', required=True, default=None, help="The fasta format file describing the reference sequence for your organism.")
-parser.add('-ids', nargs = '*', dest='ids',required=True, help = 'some ids')
+parser.add('-targets', nargs = '*', dest='targets',required=True, help = 'Positional IDs to enrich for in the form seqid:start-stop . Can be space seperated eg: J02459:10000-15000 J02459:35000-40000')
 parser.add('-procs', '--proc_num', type=int, dest='procs',required=True, help = 'The number of processors to run this on.')
-parser.add('-t', '--time', type=int, dest='time', required=True, default=300, help="This is an error catch for when we cannot keep up with the rate of sequencing on the device. It takes a finite amount of time to process through the all the channels from the sequencer. If we cannot process through the array quickly enough then we will \'fall behind\' and lose the ability to filter sequences. Rather than do that we set a threshold after which we allow the sequencing to complete naturally. The default is 300 seconds which equates to 9kb of sequencing at the standard rate.")
 parser.add('-m', '--model',type=str, required=True, help = 'The appropriate template model file to use', dest='temp_model')
-parser.add('-l', '--model_length',type=int, required=True, help = 'The word size of the mode file - e.g 5,6 or 7', dest='model_length')
-parser.add('-i', '--index', type=int, dest ='indexpos', default=1, required=False, help = 'The index position of mean events in the reference model file.')
 parser.add('-log', '--log-file', type=str, dest='logfile', default='readuntil.log', help="The name of the log file that data will be written to regarding the decision made by this program to process read until.")
 parser.add('-w', '--watch-dir', type=str, required=True, default=None, help="The path to the folder containing the downloads directory with fast5 reads to analyse - e.g. C:\data\minion\downloads (for windows).", dest='watchdir')
 parser.add('-o', '--output', type=str, required=False, default='test_read_until_out', help="Path to a folder to symbolically place reads representing match and not match.", dest='output_folder')
+parser.add('-v', '--verbose-true', action='store_true', help="Print detailed messages while processing files.", default=False, dest='verbose')
+parser.add_argument('-ver', '--version', action='version',version=('%(prog)s version={version} date={date}').format(version=__version__,date=__date__))
 args = parser.parse_args()
 
 ######################################################
@@ -50,23 +67,20 @@ def get_seq_len(ref_fasta):
 		seqlens[record.id]=len(seq)
 	return seqlens
 
-
-######################################################
+"""######################################################
 def process_model_file(model_file):
-	model_kmers = dict()
-	with open(model_file, 'rb') as csv_file:
-		reader = csv.reader(csv_file, delimiter="\t")
-    		d = list(reader)
-		for r in range(1, len(d)):
-			kmer = d[r][0]
-			mean = d[r][args.indexpos]
-			print mean
-			if (float(mean) <= 25):
-				print "I'm almost certain you are not looking at means here - you need to fix this!"
-				exit()
-			model_kmers[kmer]=mean
-	return 	model_kmers
-
+    model_kmers = dict()
+    with open(model_file, 'rb') as csv_file:
+        reader = csv.reader(csv_file, delimiter="\t")
+        d = list(reader)
+        header = d[0]
+        meancolumnid = header.index("level_mean")
+        kmercolumnid = header.index("kmer")
+        d2 = np.array(d[1:])
+        model_kmers=dict(d2[:,[0,2]])
+        kmer_length=len(d2[0][0])
+    return model_kmers,kmer_length
+"""
 ######################################################
 def process_ref_fasta2(ref_fasta,model_kmer_means):
 	print "processing the reference fasta."
@@ -124,13 +138,12 @@ def process_ref_fasta(ref_fasta,model_kmer_means):
 
 #######################################################################
 
-def process_ref_fasta_subset(ref_fasta,model_kmer_means,seqlen):
+def process_ref_fasta_subset(ref_fasta,model_kmer_means,seqlen,kmerlen):
 	print "processing the reference fasta."
-	kmer_len=args.model_length
 	kmer_means=dict()
 	for record in SeqIO.parse(ref_fasta, 'fasta'):
 		chunkcounter=0
-		for sequence in args.ids:
+		for sequence in args.targets:
 			print sequence
 			chunkcounter += 1
 			print "ID", record.id
@@ -220,28 +233,11 @@ def squiggle_search(squiggle,kmerhash,channel_id,read_id,seqlen):
 			#print line.rstrip('\n')
 			if "Location" in line:
 				location = int(line.split(': ',1)[1].rstrip('\n'))
-		#		print "Location",location
+				print "Location",location
 			if "Distance" in line:
 				distance = float(line.split(': ',1)[1].rstrip('\n'))
-		#		print "Distance",distance
+				print "Distance",distance
 		result.append((distance,id,"F",location))
-#		subjectfile2 = id+"_"+"R"+"_subject.bin"
-#		subjectfile2 = re.sub('\|','_',subjectfile2)
-#		seqlen2 = str(seqlen[id])
-#		commands = queryfile+' '+subjectfile2+' 200 '+seqlen2+' 0.05'
-#		#print "Running Reverse"
-#		runcommand = gpucode+commands
-#		location = ()
-#		distance = ()
-#		for line in runProcess(runcommand.split()):
-#			#print line.rstrip('\n')
-#			if "Location" in line:
-#				location = int(line.split(': ',1)[1].rstrip('\n'))
-#		#		print "Location",location
-#			if "Distance" in line:
-#				distance = float(line.split(': ',1)[1].rstrip('\n'))
-#		#		print "Distance",distance
-#		result.append((distance,id,"R",location))
 		os.remove(queryfile)
 
 
@@ -294,8 +290,8 @@ class LockedDict(dict):
             return d
 
 #######################################################################
-def go_or_no(seqid,direction,position,seqlen):
-	for sequence in args.ids:
+def go_or_no(seqid,direction,position,seqlen,args):
+	for sequence in args.targets:
 		#print sequence
 		start = int(float(sequence.split(':', 1 )[1].split('-',1)[0]))
 		stop = int(float(sequence.split(':', 1 )[1].split('-',1)[1]))
@@ -315,6 +311,7 @@ def go_or_no(seqid,direction,position,seqlen):
 	return "Skip"
 
 ###################
+
 def mp_worker((channel_id, data,kmerhash,seqlen,readstarttime,kmerhash_subset)):
 	#for ref in kmerhash:
 		#print ref
@@ -372,7 +369,7 @@ def mp_worker((channel_id, data,kmerhash,seqlen,readstarttime,kmerhash_subset)):
 
 
 
-def process_hdf5((filename,kmerhash_subset,procampres)):
+def process_hdf5((filename,kmerhash_subset,procampres,seqlen,args)):
     #returnlist=list()
 	#print filename
 	returndict=dict()
@@ -388,11 +385,17 @@ def process_hdf5((filename,kmerhash_subset,procampres)):
 		#print event_collection
 
 		squiggle = event_collection[50:350]
+
+		#squiggleres = squiggle_search2(squiggle,channel_id,data.read_id,kmerhash,seqlen)
+        #print squiggleres
+		#result = go_or_no(squiggleres[0],squiggleres[2],squiggleres[3],seqlen)
+		#print result
+
 		#print data.events[0].start
 		#result = 'bernard'
 		#print squiggle
 		#exit()
-		#squiggleres = squiggle_search2(squiggle,kmerhash,len(squiggle))
+		squiggleres = squiggle_search2(squiggle,kmerhash_subset,len(squiggle))
 	##	print "Full Length:",squiggleres
 	#	print "Full Length Match Length:", squiggleres[5]-squiggleres[3]
 		squiggleres2 = squiggle_search2(squiggle,kmerhash_subset,len(squiggle))
@@ -400,13 +403,22 @@ def process_hdf5((filename,kmerhash_subset,procampres)):
 		squiggleres3 = squiggle_search2(squiggle[150:300],kmerhash_subset,len(squiggle[150:300]))
 		#squiggleres4 = squiggle_search2(squiggle[25:125],kmerhash_subset,len(squiggle[25:125]))
 		#if squiggleres2[5] > squiggleres3[3] > squiggleres2[3] and squiggleres3[3] > squiggleres4[3] > squiggleres2[3]:
-                if squiggleres2[5] > squiggleres3[3] > squiggleres2[3]:
+		if squiggleres2[5] > squiggleres3[3] > squiggleres2[3]:
 	#		print "!!!!!!!!!!!!!!!! We got a good one! !!!!!!!!!!!!!!!!"
 	#		print "Subset:",squiggleres2
 	#		print "Subset Match Length:", squiggleres2[5]-squiggleres2[3]
 	#		print "SecondHalf:",squiggleres3
 	#		print "SecondHalf:", squiggleres3[5]-squiggleres3[3]
 	#		print "FirstHalf:", squiggleres4, squiggleres4[5]-squiggleres4[3]
+			print squiggleres[0],squiggleres[2],squiggleres[3],seqlen
+			try:
+				result = go_or_no(squiggleres[0],squiggleres[2],squiggleres[3],seqlen,args)
+				print "result", result
+			except Exception,err:
+				print "ARSE"
+				#print err
+
+			#print result
 			result = "Sequence"
 		else:
 			#print "Subset:",squiggleres2
@@ -442,8 +454,8 @@ def mycallback((result,filename)):
 		else:
 			destfile = os.path.join(path4,filetocheck[1])
 		try:
-			os.symlink(sourcefile, destfile)
-			#shutil.move(sourcefile,destfile)
+			#os.symlink(sourcefile, destfile)
+			shutil.copy(sourcefile,destfile)
 		except Exception, err:
 			print "File Copy Failed",err
 	else:
@@ -465,8 +477,8 @@ def mycallback((result,filename)):
 		else:
 			destfile = os.path.join(path4,filetocheck[1])
 		try:
-			os.symlink(sourcefile, destfile)
-			#shutil.move(sourcefile,destfile)
+			#os.symlink(sourcefile, destfile)
+			shutil.copy(sourcefile,destfile)
 		except Exception, err:
 			print "File Copy Failed",err
 
@@ -475,82 +487,33 @@ if __name__ == "__main__":
 	print "**** This code will open a collection of reads and simulate read until on them. It will    ****"
 	print "**** copy reads into a secondary folder for subsequent processing by another analysis      ****"
 	print "**** package.                                                                              ****"
-	print "**** This is in the vain attempt that we might generate a really cool visual!              ****"
 	print "***********************************************************************************************"
-	#global p
-	#logging.basicConfig(format='%(levelname)s:%(message)s',filename=args.logfile, filemode='w', level=logging.INFO	)
-	#logging.debug('This message should go to the log file')
-	#logging.info('So should this')
-	#logging.warning('And this, too')
-	#p = multiprocessing.Pool(4)
-	# A few extra bits here to automatically reconnect if the server goes down
-	# and is brought back up again.
-	#current_time = time.time()
-	#print current_time
-	#for id in kmerhash:
-	#	for ref in kmerhash[id]:
-	#		print id,ref
-	#		print type(kmerhash[id][ref])
-	#		testarray = sklearn.preprocessing.scale(np.array(kmerhash[id][ref][0:10000]),axis=0,with_mean=True,with_std=True,copy=True)
-	#		filename = id+"_"+ref+"_subject.bin"
-	#		filename = re.sub('\|','_',filename)
-	#		with open(filename, "wb") as f:
-	#			f.write(ar.array("f", testarray))
-	#		filename = id+"_"+ref+"_subject.txt"
-	#		filename = re.sub('\|','_',filename)
-	#		np.savetxt(filename, testarray, delimiter=',')
-	#		print len(testarray)
-	#		filename2 = id+"_"+ref+"_testquery.bin"#
-	#		filename2 = re.sub('\|','_',filename2)
-	#		with open(filename2, "wb") as f:
-	#			f.write(ar.array("f", np.array(kmerhash[id][ref])[700:1000]))
-	#		filename2 = id+"_"+ref+"_testquery.txt"
-	#		filename2 = re.sub('\|','_',filename2)
-	#		np.savetxt(filename2, np.array(kmerhash[id][ref])[700:1000], delimiter=',')#
-	#		print len(testarray[700:1000])
-
-
-	#while 1:
-	#	try:
-	#		print "Running Analysis"
-	#		run_analysis()
-	#	except socket_error as serr:
-	#		if serr.errno != errno.ECONNREFUSED:
-	#			raise serr
-	#	print "Hanging around, waiting for the server..."
-	#	time.sleep(5) # Wait a bit and try again
 
 	p = multiprocessing.Pool(args.procs)
 	manager = multiprocessing.Manager()
 	procampres=manager.dict()
 	fasta_file = args.fasta
 	seqlen = get_seq_len(fasta_file)
-	#print type(seqlen)
-	print seqlen
-	#model_file = "model.txt"
-	model_file = args.temp_model
-	model_kmer_means=process_model_file(model_file)
-	#model_kmer_means = retrieve_model()
-	#global kmerhash
-	#kmerhash = process_ref_fasta(fasta_file,model_kmer_means)
-	kmerhash_subset = process_ref_fasta_subset(fasta_file,model_kmer_means,seqlen)
 
-	#print type (kmerhash)
+	model_file = args.temp_model
+	model_kmer_means,kmer_len=process_model_file(model_file)
+
+	kmerhash_subset = process_ref_fasta_subset(fasta_file,model_kmer_means,seqlen,kmer_len)
 
 	d=list()
 	filenamecounter=0
 	for filename in glob.glob(os.path.join(args.watchdir, '*.fast5')):
 		filenamecounter+=1
-		print filename
-		d.append([filename,kmerhash_subset,procampres])
+		#print filename
+		d.append([filename,kmerhash_subset,procampres,seqlen,args])
 	for filename in glob.glob(os.path.join(args.watchdir, "pass",'*.fast5')):
 		filenamecounter+=1
-		print filename
-		d.append([filename,kmerhash_subset,procampres])
+		#print filename
+		d.append([filename,kmerhash_subset,procampres,seqlen,args])
 	for filename in glob.glob(os.path.join(args.watchdir, "fail",'*.fast5')):
 		filenamecounter+=1
-		print filename
-		d.append([filename,kmerhash_subset,procampres])
+		#print filename
+		d.append([filename,kmerhash_subset,procampres,seqlen,args])
 	procdata=tuple(d)
 
 	results=[]
