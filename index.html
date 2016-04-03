@@ -143,27 +143,37 @@ Type "help", "copyright", "credits" or "license" for more information.
 <p>Additional options are described below for each script.</p>
 
 <h1>
-<a id="files-in-this-repository" class="anchor" href="#files-in-this-repository" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Files in this repository</h1>
+<a id="files-and-folders-in-this-repository" class="anchor" href="#files-and-folders-in-this-repository" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Files and Folders in this repository</h1>
 
-<p>getmodels.py - Script for accessing model files.</p>
+<p>ampbalance.py - an illustrative script for selecting a fixed number of reads from individual amplicons using squiggle matching alone.</p>
+
+<p>ampbalancetest (folder - contains 110 example fast5 files)</p>
+
+<p>ampliconSPLIT.py - an illustrative script that will split reads into folders based on squiggle matching to individual amplicons.</p>
+
+<p>exampleread\llssbzms2p35x_lambda11ladderup_1208_1_ch11_file27_strand.fast5</p>
+
+<p>getmodels.py - A script for extracting model files to generate a squiggle reference for a given sequence.</p>
 
 <p>J02459.fasta - A reference fasta file for bacteriophage lambda. This is the reference used for all our work.</p>
 
 <p>lambda_amplicons.txt - A file that defines the amplicons used in this study. The file is in the format seq_id:start-stop - so here the seq_id is J02456 (as in the file J02459.fasta) and the start and stop coordinates match our amplicons eg. J02456:52-1980</p>
 
+<p>LICENSE - MIT License</p>
+
 <p>README.md - this readme file.</p>
 
-<p>lambda_amplicons.fasta - This is a reference file containing copies of individual amplicons for bacteriophage lambda. It is used in testing the behaviour of aReadUntil.py - described below.</p>
+<p>ReadUntil\aReadUntil.py - A script for amplicon balancing via the read until API.</p>
 
-<p>ReadUntil/ruutils.py - This file contains a number of useful functions for various scripts. It will never be run itself but is called by many of the other scripts.</p>
+<p>ReadUntil\gReadUntil.py - A script for selecting a specific region of the genome via the read until API</p>
 
-<h1>
-<a id="folders-in-this-repository" class="anchor" href="#folders-in-this-repository" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Folders in this repository</h1>
+<p>ReadUntil\lambda_amplicons.fasta - This is a reference file containing copies of individual amplicons for bacteriophage lambda. It is used in testing the behaviour of aReadUntil.py - described below.</p>
 
-<p>exampleread - a folder containing a single example read for extracting a template and complement model file from.
-ampbalancetest - a folder containing a set of reads to test ampbalance behaviour with.
-RUtestset - a folder containing a set of reads to simulate read until on.
-ReadUntil - this folder contains the live read until scripts. It also includes a file 'ruutils.py'. This is required by many of the other scripts within the collection.</p>
+<p>ReadUntil\ruutils.py - This file contains a number of useful functions for various scripts. It will never be run itself but is called by many of the other scripts.</p>
+
+<p>test_gReadUntil.py - A script for testing the functionality of gReadUntil.py in the absence of the API itself. </p>
+
+<p>RUtestset (folder - contains 55 example fast5 files)</p>
 
 <h1>
 <a id="running-offline-read-until-scripts" class="anchor" href="#running-offline-read-until-scripts" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Running Offline Read Until Scripts</h1>
