@@ -640,7 +640,7 @@ In the example.py script, edit the line which states:
 
 to
 
-    host="ws://localhost:12345"
+    host="ws://localhost:9200"
 
 Note - you can specify a different port value if you wish.
 
