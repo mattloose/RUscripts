@@ -1,5 +1,11 @@
 # RUscripts
 
+To get started either download this repository using the ZIP options or (preferably)
+
+git clone https://github.com/mattloose/RUscripts
+
+
+
 Important Note:
 
 Running read until will influence the behaviour of your flow cell and change the output of your sequencing experiment. You are strongly advised to run simulations of read until prior to running on a live flow cell. The code as presented here is a demonstration of read until and one implementation. Users run this code entirely at their own risk.
@@ -523,7 +529,7 @@ Note that this is not the latest commit. The latest version as of 30th March 201
 
 # Installing the API
 
-Copy the following files and folders into the RUscripts\ReadUntil folder:
+Copy the following files and folders (and there contents) into the RUscripts\ReadUntil folder:
 
     read_until.py
 	event_sampler.thrift
@@ -616,7 +622,7 @@ to
 
 Note - you can specify a different port value if you wish.
 
-Then from another command window execute the examply.py script
+Then from another command window execute the examply.py script (note this is supplied by the ONT API)
 
     C:\path\to\RUscripts\ReadUntil>python example.py
 
