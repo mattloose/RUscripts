@@ -1,34 +1,36 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+    <title>Ruscripts by mattloose</title>
 
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <script src="javascripts/scale.fix.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-
-    <title>Ruscripts by mattloose</title>
   </head>
-
   <body>
-    <header>
-      <div class="inner">
-        <h1>Ruscripts</h1>
-        <h2>Scripts for implementing read until and other examples.</h2>
-        <a href="https://github.com/mattloose/RUscripts" class="button"><small>View project on</small> GitHub</a>
-      </div>
-    </header>
+    <div class="wrapper">
+      <header>
+        <h1 class="header">Ruscripts</h1>
+        <p class="header">Scripts for implementing read until and other examples.</p>
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <h1>
+        <ul>
+          <li class="download"><a class="buttons" href="https://github.com/mattloose/RUscripts/zipball/master">Download ZIP</a></li>
+          <li class="download"><a class="buttons" href="https://github.com/mattloose/RUscripts/tarball/master">Download TAR</a></li>
+          <li><a class="buttons github" href="https://github.com/mattloose/RUscripts">View On GitHub</a></li>
+        </ul>
+
+        <p class="header">This project is maintained by <a class="header name" href="https://github.com/mattloose">mattloose</a></p>
+
+
+      </header>
+      <section>
+        <h1>
 <a id="ruscripts" class="anchor" href="#ruscripts" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>RUscripts</h1>
 
 <p>To get started either download this repository using the ZIP options or (preferably)</p>
@@ -90,12 +92,17 @@ Type "help", "copyright", "credits" or "license" for more information.
 <h1>
 <a id="python-modules-required-for-running-read-until-using-source-code" class="anchor" href="#python-modules-required-for-running-read-until-using-source-code" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Python modules required for running read until using source code.</h1>
 
-<p>h5py
-configargparse
-biopython
-mlpy # Must be version 3.5.0 or above - see below
-watchdog
-sklearn #Available as default with Anaconda</p>
+<p>h5py</p>
+
+<p>configargparse</p>
+
+<p>biopython</p>
+
+<p>mlpy # Must be version 3.5.0 or above - see below</p>
+
+<p>watchdog</p>
+
+<p>sklearn #Available as default with Anaconda</p>
 
 <h1>
 <a id="to-install-these-modules-on-the-ont-anaconda-type" class="anchor" href="#to-install-these-modules-on-the-ont-anaconda-type" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>To install these modules on the ONT Anaconda type:</h1>
@@ -140,11 +147,15 @@ sklearn #Available as default with Anaconda</p>
 
 <p>getmodels.py - Script for accessing model files.</p>
 
-<p>J02459.fasta - A reference fasta file for bacteriophage lambda. This is the reference used for all our work.
-lambda_amplicons.txt - A file that defines the amplicons used in this study. The file is in the format seq_id:start-stop - so here the seq_id is J02456 (as in the file J02459.fasta) and the start and stop coordinates match our amplicons eg. J02456:52-1980
-README.md - this readme file.
-lambda_amplicons.fasta - This is a reference file containing copies of individual amplicons for bacteriophage lambda. It is used in testing the behaviour of aReadUntil.py - described below.
-ReadUntil/ruutils.py - This file contains a number of useful functions for various scripts. It will never be run itself but is called by many of the other scripts.</p>
+<p>J02459.fasta - A reference fasta file for bacteriophage lambda. This is the reference used for all our work.</p>
+
+<p>lambda_amplicons.txt - A file that defines the amplicons used in this study. The file is in the format seq_id:start-stop - so here the seq_id is J02456 (as in the file J02459.fasta) and the start and stop coordinates match our amplicons eg. J02456:52-1980</p>
+
+<p>README.md - this readme file.</p>
+
+<p>lambda_amplicons.fasta - This is a reference file containing copies of individual amplicons for bacteriophage lambda. It is used in testing the behaviour of aReadUntil.py - described below.</p>
+
+<p>ReadUntil/ruutils.py - This file contains a number of useful functions for various scripts. It will never be run itself but is called by many of the other scripts.</p>
 
 <h1>
 <a id="folders-in-this-repository" class="anchor" href="#folders-in-this-repository" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Folders in this repository</h1>
@@ -1543,25 +1554,12 @@ Killed: 9
 <a id="getting-help-with-read-until-1" class="anchor" href="#getting-help-with-read-until-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Getting help with read until.</h1>
 
 <p>We are happy to help where we can. Please feel free to contact via twitter ({at}mattloose) or email matt.loose{@}nottingham.ac.uk . We will try to update this read me file whenever significant changes are made to the API or minKNOW versions that might affect read until. For issues with the API itself or the ws_event_sampler program, users will most likely be redirected to ONT.</p>
-        </section>
-
-        <aside id="sidebar">
-          <a href="https://github.com/mattloose/RUscripts/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/mattloose/RUscripts/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
-
-          <p class="repo-owner"><a href="https://github.com/mattloose/RUscripts"></a> is maintained by <a href="https://github.com/mattloose">mattloose</a>.</p>
-
-          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
+      </section>
+      <footer>
+        <p><small>Hosted on <a href="https://pages.github.com">GitHub Pages</a> using the Dinky theme</small></p>
+      </footer>
     </div>
-
-  
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+		
   </body>
 </html>
