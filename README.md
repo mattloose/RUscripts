@@ -6,13 +6,13 @@ The scripts here are referenced by the paper available at http://biorxiv.org/con
 
 To get started either download this repository using the ZIP options or (preferably)
 
-git clone https://github.com/mattloose/RUscripts
+    git clone https://github.com/mattloose/RUscripts
 
 
 
 Important Note:
 
-Running read until will influence the behaviour of your flow cell and change the output of your sequencing experiment. You are strongly advised to run simulations of read until prior to running on a live flow cell. The code as presented here is a demonstration of read until and one implementation. Users run this code entirely at their own risk.
+Running read until will influence the behaviour of your flow cell and change the output of your sequencing experiment. You are strongly advised to run simulations of read until prior to running on a live flow cell. The code as presented here is a demonstration of read until and one method by which it can be implemented. Users run this code entirely at their own risk.
 
 #Getting help with read until.
 
@@ -30,7 +30,7 @@ All scripts are python 2.7.
 
 We assume that the default version of python in your path is the ONT Anaconda installation. To test this, type
 
-    C:\path\to\RUscripts>python
+    > python
 
 And you should see:
 
@@ -54,9 +54,13 @@ Currently supported versions of minKNOW are v 0.48.1.3 to 0.51.1.51.
 
 We highlight where the version of minKNOW used might impact results in the documentation below.
 
-*** You must have minKNOW installed on the windows machine you are running this code on. The version of Anaconda it comes with contains some of the required packages. These scripts will also run on Linux or OSX but at this time we provide no explicit documentation to support this.
+*** You must have minKNOW installed on the windows machine you are running this code on. One python distribution is called Anaconda. ONT install Anaconda alongside minKNOW and this python version comes with some of the required packages for our scripts. Our scripts will also run on Linux or OSX but at this time we provide no explicit documentation to support this, however users confident with python and Unix should have no problems.
 
 # Python modules required for running read until using source code.
+
+thrift
+
+ws4py
 
 h5py
 
@@ -64,20 +68,23 @@ configargparse
 
 biopython
 
-mlpy # Must be version 3.5.0 or above - see below
-
 watchdog
 
-sklearn #Available as default with Anaconda
+mlpy # Must be version 3.5.0 or above - cannot be installed with easy_install/pip on Windows - see below for details
+
+sklearn # Available as default with Anaconda
 
 
-# To install these modules on the ONT Anaconda type:
 
-    C:\path\to\RUscripts>easy_install thrift ws4py h5py configargparse biopython watchdog
+To install these modules on the ONT Anaconda type:
+
+
+
+    > easy_install thrift ws4py h5py configargparse biopython watchdog
 
 NOTE: You may need to add C:\Anaconda\Scripts to your path to access easy_install and pip.
 
-# To install mlpy
+To install mlpy
 
 Installing mlpy with easy_install results in a version less than that required. To overcome this on windows systems visit http://www.lfd.uci.edu/~gohlke/pythonlibs/#mlpy to obtain an mlpy wheel compiled for the appropriate version of windows and python.
 
@@ -88,11 +95,11 @@ mlpy-3.5.0-cp27-none-win_amd64.whl
 
 To install this you need to first install pip.
 
-    C:\path\to\RUscripts>easy_install install pip
+    > easy_install install pip
 
 Then to install your downloaded wheel:
 
-    C:\path\to\RUscripts>pip install \path\to\mlpy-3.5.0-cp27-non-win_amd64.whl
+    > pip install \path\to\mlpy-3.5.0-cp27-non-win_amd64.whl
 
 Now you should have all the prerequisites required to run these scripts on windows using the native python.
 
@@ -115,7 +122,7 @@ ampbalancetest (folder - contains 110 example fast5 files)
 
 ampliconSPLIT.py - an illustrative script that will split reads into folders based on squiggle matching to individual amplicons.
 
-exampleread\llssbzms2p35x_lambda11ladderup_1208_1_ch11_file27_strand.fast5
+exampleread\llssbzms2p35x_lambda11ladderup_1208_1_ch11_file27_strand.fast5 - An example read for the extraction of template and complement model files. Note this read is derived from the R7 chemistry.
 
 getmodels.py - A script for extracting model files to generate a squiggle reference for a given sequence.
 
@@ -154,9 +161,13 @@ It is not necessary to generate a model file each time you carry out a new read 
 
 Ideally the read from which to extract a model should come from the pass folder of a base called run. To extract both template and complement models, this read must be from a 2D base called run. getmodels.py will output whichever models it finds within the file.
 
+First navigate to the RUscripts folder in a windows command terminal:
+
+    > cd \path\to\Ruscripts
+
 To print the getmodels.py help statement at the prompt type:
 
-    C:\path\to\RUscripts>python getmodels.py -h
+    > python getmodels.py -h
 
 which will output:
 
@@ -183,7 +194,7 @@ We provide a suitable read in the folder exampleread
 
 So:
 
-    C:\path\to\RUscripts>python getmodels.py -r exampleread/llssbzms2p35x_lambda11ladderup_1208_1_ch11_file27_strand.fast5
+    > python getmodels.py -r exampleread/llssbzms2p35x_lambda11ladderup_1208_1_ch11_file27_strand.fast5
 
 will output:
 
@@ -221,9 +232,13 @@ Unlike read until applications this script uses the entire read.
 
 Here the script is implemented on reads that have been basecalled to facilitate testing and comparisons.
 
+First navigate to the RUscripts folder in a windows command terminal:
+
+    > cd \path\to\Ruscripts
+
 To print the ampbalance.py help statement at the prompt ($) type:
 
-    C:\path\to\RUscripts>python ampbalance.py -h
+    > python ampbalance.py -h
 
 which will output:
 
@@ -285,7 +300,7 @@ This script is designed to match amplicon sequences of known and approximately u
 
 We provide an example set of reads using lambda, found in the ampbalancetest folder. A typical usage command would be:
 
-    C:\path\to\RUscripts>python ampbalance.py -fasta J02459.fasta -ids lambda_amplicons.txt -w ampbalancetest -o ampbalanceoutput -d 5 -procs 4 -t template_r7.3_e6_70bps_6mer_6.model -c complement_r7.3_e6_70bps_6mer_6.model -l 3000
+    > python ampbalance.py -fasta J02459.fasta -ids lambda_amplicons.txt -w ampbalancetest -o ampbalanceoutput -d 5 -procs 4 -t template_r7.3_e6_70bps_6mer_6.model -c complement_r7.3_e6_70bps_6mer_6.model -l 3000
 
 This will output the following:
 
@@ -348,9 +363,13 @@ ampliconSPLIT.py simulates read until on either raw or basecalled reads. It igno
 
 This script will process reads into subfolders in the targetpath corresponding to each amplicon described in the -ids file - e.g /targetpath/{amplicon_number}. If the read is basecalled, it will be placed in a downloads subfolder - e.g /targetpath/{amplicon_number}/downloads .
 
+First navigate to the RUscripts folder in a windows command terminal:
+
+    > cd \path\to\Ruscripts
+
 To print the ampliconSPLIT.py help statement at the prompt ($) type:
 
-    C:\path\to\RUscripts>python ampliconSPLIT.py -h
+    > python ampliconSPLIT.py -h
 
 which will output:
 
@@ -399,7 +418,7 @@ which will output:
 
 An example run command using test data:
 
-    C:\path\to\RUscripts>python ampliconSPLIT.py -fasta J02459.fasta -ids lambda_amplicons.txt -w RUtestset/ -o test -d 10 -procs 8 -t template_r7.3_e6_70bps_6mer_6.model
+    > python ampliconSPLIT.py -fasta J02459.fasta -ids lambda_amplicons.txt -w RUtestset/ -o test -d 10 -procs 8 -t template_r7.3_e6_70bps_6mer_6.model
 
 Which will output:
 
@@ -453,9 +472,13 @@ The depth parameter (-d) sets the number of reads that will be copied. Setting t
 
 This script runs entirely independently of the read until API and allows for simulation of selective sequencing of a genome. You can provide a pool of reads and the script will use the first 250 events to map a read and copy those mapping within the desired area to a specified folder.
 
+First navigate to the ReadUntil folder within the RUscripts folder in a windows command terminal:
+
+    > cd \path\to\RUscripts\ReadUntil
+
 Help is available by typing:
 
-    C:\path\to\RUscripts\ReadUntil\python test_gReadUntil.py -h
+    > python test_gReadUntil.py -h
 
 which will output:
 
@@ -497,7 +520,7 @@ which will output:
 
 A typical command line to select reads mapping from 10-15kb in the lambda genome would be:
 
-    C:\path\to\RUscripts\ReadUntil\python test_gReadUntil.py -fasta ../J02459.fasta -targets J02459:10000-15000 -procs 4  -m ../template_r7.3_e6_70bps_6mer_6.model -w ../RUtestset/ -o test
+    > python test_gReadUntil.py -fasta ../J02459.fasta -targets J02459:10000-15000 -procs 4  -m ../template_r7.3_e6_70bps_6mer_6.model -w ../RUtestset/ -o test
 
 This would give the following output:
 

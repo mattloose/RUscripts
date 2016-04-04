@@ -415,8 +415,7 @@ def process_hdf5((filename,kmerhash_subset,procampres,seqlen,args)):
 				result = go_or_no(squiggleres[0],squiggleres[2],squiggleres[3],seqlen,args)
 				print "result", result
 			except Exception,err:
-				print "ARSE"
-				#print err
+				print err
 
 			#print result
 			result = "Sequence"
