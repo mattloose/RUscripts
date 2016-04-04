@@ -1512,9 +1512,10 @@ This will now stream live data from whatever is being sequenced in minKNOW on po
 
 For the aReadUntil.py script it is essential that you:
 
-1). Use the correct model file for your chemistry.
-2). Point aReadUntil at the correct folder for seeing the raw reads as output by minKNOW (typically C:\data\reads). aReadUntil.py does not create this folder itself. It must already exist. If aReadUntil cannot see the reads, it cannot keep track of reads actually written to disk.
-3). aReadUntil will move reads it has seen to a subfolder called 'done' within the reads folder (so typically C:\data\reads\done) and it is this folder that you should point metrichor too.
+1. Use the correct model file for your chemistry.
+2. Set the correct sequencing speed for your chemistry. (Currently tested on up to 70b/s)
+3. Point aReadUntil at the correct folder for seeing the raw reads as output by minKNOW (typically C:\data\reads). aReadUntil.py does not create this folder itself. It must already exist. If aReadUntil cannot see the reads, it cannot keep track of reads actually written to disk.
+4. aReadUntil will move reads it has seen to a subfolder called 'done' within the reads folder (so typically C:\data\reads\done) and it is this folder that you should point metrichor too.
 
 You can then run any of the script options above to try aReadUntil.
 
@@ -1535,11 +1536,15 @@ Usage Examples
 
 To monitor a run without implementing read until, alerting when you have 40x coverage of each amplicon:
 
-    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 40 -e 0 -i
+    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 70 -ip 127.0.0.1 -p 9200 -w test  -s -d 40 -e 0 -i
 
-To implement read until, alerting when you have 40x coverage of each amplicon:
+To implement read until, stopping the run when you have 40x coverage of each amplicon:
 
-    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 40 -e 0
+    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 70 -ip 127.0.0.1 -p 9200 -w test  -s -d 40 -e 0
+
+To completely prevent the sequencing of a subset of amplicons (assuming 11 amplicons in total):
+
+    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 70 -ip 127.0.0.1 -p 9200 -w test  -s -cd 10000,0,10000,0,10000,0,10000,0,10000,0,10000 -e 0
 
 #Running read until from a remote machine.
 
