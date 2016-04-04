@@ -1,6 +1,8 @@
 # RUscripts
 
-This readme file is also available at http://mattloose.github.io/RUscripts
+This readme file will shortly be deprecated. It exists here whilst we test the new docs available at: http://mattloose.github.io/RUscriptsdocs/
+
+Please use these.
 
 The scripts here are referenced by the paper available at http://biorxiv.org/content/early/2016/02/03/038760
 
