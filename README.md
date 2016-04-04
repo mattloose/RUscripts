@@ -70,6 +70,8 @@ biopython
 
 watchdog
 
+psutil
+
 mlpy # Must be version 3.5.0 or above - cannot be installed with easy_install/pip on Windows - see below for details
 
 sklearn # Available as default with Anaconda
@@ -80,7 +82,7 @@ To install these modules on the ONT Anaconda type:
 
 
 
-    > easy_install thrift ws4py h5py configargparse biopython watchdog
+    > easy_install thrift ws4py h5py configargparse biopython watchdog psutil
 
 NOTE: You may need to add C:\Anaconda\Scripts to your path to access easy_install and pip.
 
@@ -597,7 +599,7 @@ First navigate to this folder:
 
     > cd \grouper\binaries
 
-ws_event_sampler can run either stand alone in simulation mode, or alongside minKNOW as it is running. For simulations, we suggest you start minKNOW and have it open (but not actually sequencing). Then start ws_event_sampler in simluation mode. In this way you will see the output from our scripts in the minKNOW messages window.
+ws_event_sampler can run either stand alone in simulation mode, or alongside minKNOW as it is running. For simulations, we suggest you start minKNOW and have it open (but not actually sequencing). Then start ws_event_sampler in simulation mode. In this way you will see the output from our scripts in the minKNOW messages window.
 
 Running ws_event_sampler is done as follows:
 

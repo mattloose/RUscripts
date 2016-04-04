@@ -1387,7 +1387,7 @@ if __name__ == "__main__":
         print "Sorry, but the folder "+args.watchdir+" cannot be found.\n\nPlease check you have entered the path correctly and try again.\n\nThis script will now terminate.\n"
         die_nicely()
 
-    
+
     global p
 
     p = multiprocessing.Pool(args.procs)
