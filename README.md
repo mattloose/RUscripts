@@ -960,16 +960,13 @@ This script enables balanced sequencing of individual amplicons from a pool of a
 
 These methods are complicated by how the script tracks the final reads. We currently define three different optional counting points for a read:
 
-1) read
-    We track each channel individually. A read is assumed to have completed if another read is seen at that channel. This method assumes that every read start reported by read until will result in a true final sequenced read. By observation, we know that this assumption can fail. Presumably unseen minKNOW errors contribute to some of these failures. It is also possible that an observed read is not a true sequence or failed to generate sufficient data.
+1) read - We track each channel individually. A read is assumed to have completed if another read is seen at that channel. This method assumes that every read start reported by read until will result in a true final sequenced read. By observation, we know that this assumption can fail. Presumably unseen minKNOW errors contribute to some of these failures. It is also possible that an observed read is not a true sequence or failed to generate sufficient data.
 
 
-2) file
-    Here we track files as they are written to disk. Files written to disk are paired up with entries tracked via read until and so matching data are conserved. When running a 2D library prep, a common failure are 1D reads - i.e a complement sequence is not detected. Thus it is possible that when counting files, 1D only reads might lower the yield.
+2) file - Here we track files as they are written to disk. Files written to disk are paired up with entries tracked via read until and so matching data are conserved. When running a 2D library prep, a common failure are 1D reads - i.e a complement sequence is not detected. Thus it is possible that when counting files, 1D only reads might lower the yield.
 
 
-3) 2d
-    Here we track files in the same way, but further we inspect for the 2d flag within a file. This allows us to count the number of 2d potential reads (all prior to base calling). It should be noted that the current version of minKNOW at the time of writing - 0.51.1.62 - has some problems with event and hairpin detection, resulting in lower than expected 2d read counts.
+3) 2d - Here we track files in the same way, but further we inspect for the 2d flag within a file. This allows us to count the number of 2d potential reads (all prior to base calling). It should be noted that the current version of minKNOW at the time of writing - 0.51.1.62 - has some problems with event and hairpin detection, resulting in lower than expected 2d read counts.
 
 
 
