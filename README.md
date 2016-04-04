@@ -982,10 +982,13 @@ aReadUntil interacts with read files. Metrichor moves files as they are basecall
     2) aReadUntil observes read, processes it and moves it to a 'done' folder ( C:\data\reads\done)
     3) metrichor reads files from the done folder and moves them to 'uploaded' and 'downloaded' as appropriate (C:\data\reads\done\uploaded and C:\data\reads\done\downloads)
 
+First navigate to the correct folder:
+
+    > cd \path\to\RUScripts\ReadUntil\
 
 To see the help message from aReadUntil type:
 
-    C:\path\to\RUScripts\ReadUntil\>python aReadUntil.py -h
+    > python aReadUntil.py -h
 
 which will output:
 
@@ -1111,15 +1114,19 @@ There are a number of important parameters here.
 
 To simulate amplicon sequencing we provide a workaround to enable the ws_event_sampler to stream individual amplicons. This requires a specially engineered fasta file, lambda_amplicons.fasta. This file contains amplicons in both forward and reverse complement orientation. Of the 11 amplicons, all odd numbered amplicons are present at 1x (1,3,5,7,9,11). Even numbered amplicons are present at different concentrations to simulate an uneven library.
 
+In an separate administrator window navigate to:
+
+    > cd \grouper\binaries
+
 To run ws_event_sampler with this file in a cmd window with administrator privileges enter:
 
-    C:\grouper\binaries>bin\ws_event_sampler.exe -p 9200 -s --sim-channels 512 --sim-fragment-length 1 1 1900 --sim-fasta C:\path\to\ReadUntil\lambda_amplicons.fasta --sim-log amplicon-sim.log
+    > bin\ws_event_sampler.exe -p 9200 -s --sim-channels 512 --sim-fragment-length 1 1 1900 --sim-fasta C:\path\to\ReadUntil\lambda_amplicons.fasta --sim-log amplicon-sim.log
 
 Note: You can vary the number of channels as you feel appropriate for your computer. For the sim fragment length, we specify a length of 1900 bases per read. This forces the fragment to include the entire lenght of each amplicon with some flex around the start site, approximating what you might see on a real run.
 
 To run an appropriate command for aReadUntil.py enter this command in another cmd window:
 
-        C:\Users\plzmwl\Desktop\RUscripts\UPDATES\ReadUntil>python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m C:\grouper\binaries\conf\synthesis\model.txt -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 50 -e 0 -i
+    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m C:\grouper\binaries\conf\synthesis\model.txt -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 50 -e 0 -i
 
 
 This command will use the lambda reference (-fasta ..\J02459.fasta) and the amplicon definitions (-ids ..\lambda_amplicons.txt) and match reads across 8 processors (-procs 8).
@@ -1255,7 +1262,7 @@ The run is now complete and each amplicon has at least 50 x coverage of 2D reads
 
 Now we will repeat this run but enable read until:
 
-    C:\Users\plzmwl\Desktop\RUscripts\UPDATES\ReadUntil>python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m C:\grouper\binaries\conf\synthesis\model.txt -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 50 -e 0
+    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m C:\grouper\binaries\conf\synthesis\model.txt -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 50 -e 0
 
 Which will output:
 
@@ -1354,7 +1361,7 @@ On these specific examples, the amplicons are already reasonably balanced and so
 
 To do this, type the following command:
 
-    C:\Users\plzmwl\Desktop\RUscripts\UPDATES\ReadUntil>python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m C:\grouper\binaries\conf\synthesis\model.txt -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -cd 0,50,100,150,200,250,300,350,400,450,500 -e 0
+    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m C:\grouper\binaries\conf\synthesis\model.txt -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -cd 0,50,100,150,200,250,300,350,400,450,500 -e 0
 
 We have substituted the -d flag for -cd.
 
@@ -1430,7 +1437,9 @@ And at the end of the run:
 
 And without read until:
 
-    python aReadUntil.py -fasta ../J02459.fasta -ids ../lambda_amplicons.txt -cd 0,50,100,150,200,250,300,350,400,450,500 -e 0 -procs 8 -t 20 -m /Applications/MinKNOW.app/Contents/Resources/conf/synthesis/model.txt -g 2d -ip 127.0.0.1 -w test -p 9200 -seq 30 -sim -c -s -i
+    > python aReadUntil.py -fasta ../J02459.fasta -ids ../lambda_amplicons.txt -cd 0,50,100,150,200,250,300,350,400,450,500 -e 0 -procs 8 -t 20 -m C:\grouper\binaries\conf\synthesis\model.txt -g 2d -ip 127.0.0.1 -w test -p 9200 -seq 30 -sim -c -s -i
+
+
     minoTour software is monitoring read until and will alert you when you have reached your target of 0,50,100,150,200,250,300,350,400,450,500x coverage on each amplicon.
     {'J02459': 48502}
     Mean amplicon length: 1929
@@ -1489,9 +1498,13 @@ Important Note:
 
 Running read until will influence the behaviour of your flow cell and change the output of your sequencing experiment. You are strongly advised to run simulations of read until prior to running on a live flow cell. The code as presented here is a demonstration of read until and one implementation. Users run this code entirely at their own risk.
 
+In an separate administrator window navigate to:
+
+    > cd \grouper\binaries
+
 To run amplicon balancing on live data, first change the configuration of ws_event_sampler:
 
-    C:\grouper\binaries>bin\ws_event_sampler.exe -p 9200
+    > bin\ws_event_sampler.exe -p 9200
 
 This will now stream live data from whatever is being sequenced in minKNOW on port 9200.
 
@@ -1520,11 +1533,11 @@ Usage Examples
 
 To monitor a run without implementing read until, alerting when you have 40x coverage of each amplicon:
 
-    C:\path\to\RUscripts\ReadUntil>python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 40 -e 0 -i
+    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 40 -e 0 -i
 
 To implement read until, alerting when you have 40x coverage of each amplicon:
 
-    C:\path\to\RUscripts\ReadUntil>python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 40 -e 0
+    > python aReadUntil.py -fasta ..\J02459.fasta -ids ..\lambda_amplicons.txt -procs 8 -c -t 40 -m ..\template_r7.3_e6_70bps_6mer_6.model -g 2d -seq 30 -ip 127.0.0.1 -p 9200 -w test  -s -sim -d 40 -e 0
 
 #Running read until from a remote machine.
 
