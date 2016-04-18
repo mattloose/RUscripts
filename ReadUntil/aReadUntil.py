@@ -38,239 +38,13 @@ from pstats import Stats
 #from blinkstick import blinkstick
 import platform
 
-from ruutils import process_model_file,query_yes_no,send_message,execute_command_as_string
-
-###########################################################
-def file_dict_of_folder(path):
-
-	file_list_dict=dict()
-	ref_list_dict=dict()
-
-	print "File Dict Of Folder Called"
-	if os.path.isdir(path):
-		print "caching existing fast5 files in: %s" % (path)
-		for path, dirs, files in os.walk(path) :
-			for f in files:
-				#if (("downloads" in path )):
-				if ("muxscan" not in f and f.endswith(".fast5") ):
-					file_list_dict[os.path.join(path, f)]=os.stat(os.path.join(path, f)).st_mtime
-
-	print "found %d existing fast5 files to process first." % (len(file_list_dict) )
-    	return file_list_dict
-
-'''def _urlopen(url, *args):
-
-    """Open a URL, without using a proxy for localhost.
-
-    While the no_proxy environment variable or the Windows "Bypass proxy
-
-    server for local addresses" option should be set in a normal proxy
-
-    configuration, the latter does not affect requests by IP address. This
-
-    is apparently "by design" (http://support.microsoft.com/kb/262981).
-
-    This method wraps urllib2.urlopen and disables any set proxy for
-
-    localhost addresses.
-
-    """
-    #print "_urlopen called"
-    try:
-
-        host = url.get_host().split(':')[0]
-    #    print "Yo mamma",host
-
-    except AttributeError:
-
-        host = urlparse.urlparse(url).netloc.split(':')[0]
-
-    import socket
-
-    #print "socket in"
-
-    # NB: gethostbyname only supports IPv4
-
-    # this works even if host is already an IP address
-
-    addr = socket.gethostbyname(host)
-
-    #if addr.startswith('127.'):
-    #    print "returning no proxt"
-    #    return _no_proxy_opener.open(url, *args)
-
-    #else:
-    #    print "returning urlib"
-    return urllib2.urlopen(url, *args)
-
-
-def execute_command_as_string( data, host = None, port = None):
-
-        host_name = host
-
-        port_number = port
-        #print data
-
-        url = 'http://%s:%s%s' % (host_name, port_number, "/jsonrpc")
-        #print url
-
-        req = urllib2.Request(url, data=data, headers={'Content-Length': str(len(data)), 'Content-Type': 'application/json'})
-        f = None
-        try:
-            f = _urlopen(req)
-        except Exception, err:
-            err_string = "Fail to initialise mincontrol. Likely reasons include minKNOW not running, the wrong IP address for the minKNOW server or firewall issues."
-            print err_string, err
-        json_respond = json.loads(f.read())
-
-        f.close()
-
-        return json_respond
-
-def send_message(message):
-    message_to_send = '{"id":"1", "method":"user_message","params":{"content":"%s"}}' %(message)
-    results = execute_command_as_string(message_to_send,ipadd,8000)
-    return results
-'''
-
-######################################################
-def get_seq_len(ref_fasta):
-    seqlens=dict()
-    for record in SeqIO.parse(ref_fasta, 'fasta'):
-        seq=record.seq
-        seqlens[record.id]=len(seq)
-    return seqlens
-
-def scaleLocally(a, sz):
-	normWinSz=sz
-	n = (normWinSz/2)+1 # eg win 64 -> n == 33
-	start = scale(a[ : normWinSz+1 ])[:n]
-	end   = scale(a[ -(normWinSz+1) : ])[-n:]
-	mid = [ scale(a[i-n:i+n])[n] for i in range(n,len(a)-n) ]
-	a = np.hstack([start, mid, end])
-	#print len(a)
-	#exit()
-
-	#a = np.hstack(map(scale, split(a, sz)))
-	return a
-
-def scale(a):
-	'''
-	return my_scale(a)
-	'''
-	return sklearn.preprocessing.scale(a, axis=0, with_mean=True, with_std=True, copy=True)
+from ruutils import process_model_file,query_yes_no,send_message,execute_command_as_string,get_seq_len,squiggle_search2,get_custom_fasta
+from ruutils import file_dict_of_folder,scaleLocally,scale,merge_ranges,correctposition,extractsquig,die_nicely,process_ref_fasta
 
 
 ######################################################
-def process_ref_fasta_raw(ref_fasta,model_kmer_means,args,kmer_len):
-    if (args.verbose is True):
-        print "processing the reference fasta."
-    kmer_means=dict()
-    for record in SeqIO.parse(ref_fasta, 'fasta'):
-        kmer_means[record.id]=dict()
-        kmer_means[record.id]["F"]=list()
-        kmer_means[record.id]["R"]=list()
-        kmer_means[record.id]["Fprime"]=list()
-        kmer_means[record.id]["Rprime"]=list()
-        kmer_means[record.id]["Floc"]=list()
-        kmer_means[record.id]["Rloc"]=list()
-        if (args.verbose is True):
-            print "ID", record.id
-            print "length", len(record.seq)
-            print "FORWARD STRAND"
-        seq = record.seq
-        for x in range(len(seq)+1-kmer_len):
-            kmer = str(seq[x:x+kmer_len])
-            kmer_means[record.id]["F"].append(float(model_kmer_means[kmer]))
-        if (args.verbose is True):
-            print "REVERSE STRAND"
-        seq = revcomp = record.seq.reverse_complement()
-        for x in range(len(seq)+1-kmer_len):
-            kmer = str(seq[x:x+kmer_len])
-            kmer_means[record.id]["R"].append(float(model_kmer_means[kmer]))
-        kmer_means[record.id]["Fprime"]=sklearn.preprocessing.scale(kmer_means[record.id]["F"], axis=0, with_mean=True, with_std=True, copy=True)
-        kmer_means[record.id]["Floc"]=scaleLocally(kmer_means[record.id]["F"],250)
-        kmer_means[record.id]["Rprime"]=sklearn.preprocessing.scale(kmer_means[record.id]["R"], axis=0, with_mean=True, with_std=True, copy=True)
-        kmer_means[record.id]["Rloc"]=scaleLocally(kmer_means[record.id]["R"],250)
-    return kmer_means
-######################################################
-def merge_ranges(ranges):
-    """
-    Merge overlapping and adjacent ranges and yield the merged ranges
-    in order. The argument must be an iterable of pairs (start, stop).
 
-    >>> list(merge_ranges([(5,7), (3,5), (-1,3)]))
-    [(-1, 7)]
-    >>> list(merge_ranges([(5,6), (3,4), (1,2)]))
-    [(1, 2), (3, 4), (5, 6)]
-    >>> list(merge_ranges([]))
-    []
-    """
-    ranges = iter(sorted(ranges))
-    current_start, current_stop = next(ranges)
-    for start, stop in ranges:
-        if start > current_stop:
-            # Gap between segments: output current segment and start a new one.
-            yield current_start, current_stop
-            current_start, current_stop = start, stop
-        else:
-            # Segments adjacent or overlapping: merge.
-            current_stop = max(current_stop, stop)
-    yield current_start, current_stop
-######################################################
-######################
 
-def correctposition(value,ranges,sequence):
-    correction = 0
-    for range in ranges[sequence]:
-        if value >= range[0] and value <= range[1]:
-            return value - range[0] + correction + 1
-        correction = correction + (range[1]-range[0] + 1)
-######################################################
-def get_custom_fasta(ref_fasta,model_kmer_means,subsectionlist,args,kmer_len):
-    if (args.verbose is True):
-        print "Generating a custom fasta"
-    sequencedict=dict()
-    for sequence in subsectionlist:
-        if (args.verbose is True):
-            print sequence
-        for record in SeqIO.parse(ref_fasta, 'fasta'):
-            if (record.id == sequence):
-                if (sequence not in sequencedict):
-                    sequencedict[sequence]=list()
-                for sections in subsectionlist[sequence]:
-                    start = sections[0]
-                    end = sections[1]
-                    if (len(sequencedict[sequence])>0):
-                        sequencedict[sequence]=str(sequencedict[sequence])+str(record.seq[sections[0]-1:sections[1]-1])
-                    else:
-                        sequencedict[sequence]=str(record.seq[sections[0]-1:sections[1]-1])
-    if (args.verbose is True):
-        print "processing the custom fasta"
-    kmer_means=dict()
-    for sequence in sequencedict:
-        kmer_means[sequence]=dict()
-        kmer_means[sequence]["F"]=list()
-        kmer_means[sequence]["R"]=list()
-        kmer_means[sequence]["Fprime"]=list()
-        kmer_means[sequence]["Rprime"]=list()
-        seq = Seq(sequencedict[sequence], generic_dna)
-        if (args.verbose is True):
-            print "ID", sequence
-            print "length", len(seq)
-            print "FORWARD STRAND"
-        for x in range(len(seq)+1-kmer_len):
-            kmer = str(seq[x:x+kmer_len])
-            kmer_means[sequence]["F"].append(float(model_kmer_means[kmer]))
-        if (args.verbose is True):
-            print "REVERSE STRAND"
-        seq = revcomp = seq.reverse_complement()
-        for x in range(len(seq)+1-kmer_len):
-            kmer = str(seq[x:x+kmer_len])
-            kmer_means[sequence]["R"].append(float(model_kmer_means[kmer]))
-        kmer_means[sequence]["Fprime"]=sklearn.preprocessing.scale(kmer_means[sequence]["F"], axis=0, with_mean=True, with_std=True, copy=True)
-        kmer_means[sequence]["Rprime"]=sklearn.preprocessing.scale(kmer_means[sequence]["R"], axis=0, with_mean=True, with_std=True, copy=True)
-    return kmer_means
 
 
 ######################################################
@@ -295,7 +69,7 @@ def get_amplicons(amplicons,seqlengths,args):
 
 
 #####################################################
-
+'''
 def process_ref_barcodes(ref_fasta,model_kmer_means,barcodes,amplicons):
     kmer_len=args.model_length
     kmer_means=dict()
@@ -326,7 +100,7 @@ def process_ref_barcodes(ref_fasta,model_kmer_means,barcodes,amplicons):
             else:
                 print "No Match"
     return kmer_means
-
+'''
 ######################################################
 def process_ref_fasta2(ref_fasta,model_kmer_means):
     if (args.verbose is True):
@@ -341,36 +115,6 @@ def process_ref_fasta2(ref_fasta,model_kmer_means):
         for x in range(len(seq)+1-kmer_len):
             kmer = str(seq[x:x+kmer_len])
             kmer_means[record.id]["F"].append(float(model_kmer_means[kmer]))
-    return kmer_means
-#######################################################################
-
-def process_ref_fasta(ref_fasta,model_kmer_means):
-    if (args.verbose is True):
-        print "processing the reference fasta."
-    kmer_len=args.model_length
-    kmer_means=dict()
-    for record in SeqIO.parse(ref_fasta, 'fasta'):
-        kmer_means[record.id]=dict()
-        kmer_means[record.id]["F"]=list()
-        kmer_means[record.id]["R"]=list()
-        kmer_means[record.id]["Fprime"]=list()
-        kmer_means[record.id]["Rprime"]=list()
-        if (args.verbose is True):
-            print "ID", record.id
-            print "length", len(record.seq)
-            print "FORWARD STRAND"
-        seq = record.seq
-        for x in range(len(seq)+1-kmer_len):
-            kmer = str(seq[x:x+kmer_len])
-            kmer_means[record.id]["F"].append(float(model_kmer_means[kmer]))
-        if (args.verbose is True):
-            print "REVERSE STRAND"
-        seq = revcomp = record.seq.reverse_complement()
-        for x in range(len(seq)+1-kmer_len):
-            kmer = str(seq[x:x+kmer_len])
-            kmer_means[record.id]["R"].append(float(model_kmer_means[kmer]))
-        kmer_means[record.id]["Fprime"]=sklearn.preprocessing.scale(kmer_means[record.id]["F"], axis=0, with_mean=True, with_std=True, copy=True)
-        kmer_means[record.id]["Rprime"]=sklearn.preprocessing.scale(kmer_means[record.id]["R"], axis=0, with_mean=True, with_std=True, copy=True)
     return kmer_means
 
 #######################################################################
@@ -389,18 +133,9 @@ def runProcess(exe):
 
 
 
-#######################################################################
-def squiggle_search2(squiggle,channel_id,read_id,kmerhash,seqlen):
-    result=[]
-    for ref in kmerhash:
-        queryarray = sklearn.preprocessing.scale(np.array(squiggle),axis=0,with_mean=True,with_std=True,copy=True)
-        dist, cost, path = mlpy.dtw_subsequence(queryarray,kmerhash[ref]['Fprime'])
-        result.append((dist,ref,"F",path[1][0],ref,path[1][-1]))
-        dist, cost, path = mlpy.dtw_subsequence(queryarray,kmerhash[ref]['Rprime'])
-        result.append((dist,ref,"R",path[1][0],ref,path[1][-1]))
-    return sorted(result,key=lambda result: result[0])[0][1],sorted(result,key=lambda result: result[0])[0][0],sorted(result,key=lambda result: result[0])[0][2],sorted(result,key=lambda result: result[0])[0][3],sorted(result,key=lambda result: result[0])[0][4],sorted(result,key=lambda result: result[0])[0][5]
-
 ##############################
+
+'''
 def check_barcode(squiggle,barcodes_hash,seqmatchnameR,frR):
     result=[]
     queryarray = sklearn.preprocessing.scale(np.array(squiggle[0:50]),axis=0,with_mean=True,with_std=True,copy=True)
@@ -416,29 +151,10 @@ def check_barcode(squiggle,barcodes_hash,seqmatchnameR,frR):
             print "Barcode Warp Fail"
     return sorted(result,key=lambda result: result[0])[0][1],sorted(result,key=lambda result: result[0])[0][0],sorted(result,key=lambda result: result[0])[0][2],sorted(result,key=lambda result: result[0])[0][3],sorted(result,key=lambda result: result[0])[0][4],sorted(result,key=lambda result: result[0])[0][5],sorted(result,key=lambda result: result[0])[0][6]
 
+'''
 
-######################################################################
-def raw_squiggle_search2(squiggle,channel_id,read_id,hashthang,seqlen):
-    result=[]
-    for ref in hashthang:
-        try:
-            #queryarray=squiggle
-            queryarray = sklearn.preprocessing.scale(np.array(squiggle),axis=0,with_mean=True,with_std=True,copy=True)
-            dist, cost, path = mlpy.dtw_subsequence(queryarray,hashthang[ref]['Fprime'])
-            result.append((dist,ref,"F",path[1][0],path[1][-1],path[0][0],path[0][-1]))
-            dist, cost, path = mlpy.dtw_subsequence(queryarray,hashthang[ref]['Rprime'])
-            result.append((dist,ref,"R",(len(hashthang[ref]['R'])-path[1][-1]),(len(hashthang[ref]['R'])-path[1][0]),path[0][0],path[0][-1]))
-        except Exception,err:
-            print "Warp Fail"
-            blinkred(bstick)
-	return sorted(result,key=lambda result: result[0])[0][1],sorted(result,key=lambda result: result[0])[0][0],sorted(result,key=lambda result: result[0])[0][2],sorted(result,key=lambda result: result[0])[0][3],sorted(result,key=lambda result: result[0])[0][4],sorted(result,key=lambda result: result[0])[0][5],sorted(result,key=lambda result: result[0])[0][6]
 
-######################################################################
-def extractsquig(events):
-    squiggle=list()
-    for event in events:
-        squiggle.append(event.mean)
-    return(squiggle)
+
 
 class LockedDict(dict):
     """
@@ -460,36 +176,44 @@ class LockedDict(dict):
             return d
 
 #######################################################################
-def go_or_no(seqid,direction,position,seqlen):
-    for sequence in args.ids:
-        start = int(float(sequence.split(':', 1 )[1].split('-',1)[0]))
-        stop = int(float(sequence.split(':', 1 )[1].split('-',1)[1]))
-        length = seqlen[seqid]
-        #We note that the average template read length is 6kb for the test lambda dataset. Therefore we are interested in reads which start at least 3kb in advance of our position of interest
-        balance = 3000
-        if seqid.find(sequence.split(':', 1 )[0]) > 0:
-            if direction == "F":
-                if position >= ( start - balance ) and position <= stop:
-                    return "Sequence"
-            elif direction == "R":
-                if position >= ( length - stop - balance) and position <= ( length - start ):
-                    return "Sequence"
-    return "Skip"
+
+
+
+def channeldictexpire(channeldict):
+    '''
+    Function loops through a dictionary to test if a read is too old to plausibly exist anymore.
+    Removes reads which must either be blocked or failed.
+    '''
+    for key in channeldict.keys():
+        for item,value in channeldict[key].items():
+            if time.time()-value > readtimeout:
+                del channeldict[key]
+
+
+
+def processchanneldict(channeldict):
+    dtype = [('channel',int),('amplicon',int),('startsamples',float)]
+    arr=[]
+    for a,_ in channeldict.items():
+        for k,_ in channeldict[a].items():
+            arr.append((a,k,channeldict[a][k]))
+    values=np.array(arr,dtype=dtype)
+    c=list(np.sort(values,order='amplicon'))
+    d=map(lambda (x,y,z):y,c)
+    lut=dict()
+    for x in set(d):
+        lut[x]=d.count(x)
+    return lut
 
 ###################
-#                   (channel_id, data,seqlen,readstarttime,kmerhash_subset,correctedampstartdict,correctedampenddict,procampres,procampresrej,procampresseq,currentseq,procampresdone,eventdict)
-#def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,correctedampstartdict,correctedampenddict,procampres,procampresrej,procampresseq,currentseq,procampresdone,procampresfile,procampres2d,args,customdepthslist,procamprestime,eventdict,channeldict)):
-def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,startdict,enddict,procampres,procampresrej,procampresseq,currentseq,procampresdone,procampresfile,procampres2d,args,customdepthslist,procamprestime,eventdict,channeldict)):
+def amplicon_worker((channel_id, data,seqlen,readstarttime,seqids,threedarray,startdict,enddict,procampres,procampresrej,procampresseq,currentseq,procampresdone,procampresfile,procampres2d,args,customdepthslist,procamprestime,eventdict,channeldict)):
     squiggle = extractsquig(data.events)
     currentlysequence=0
     channel_id_orig = channel_id
+
     if isinstance(channel_id, basestring):
         channel_id = int(channel_id)
-    #print "Channel id is ", channel_id, "and is type", type(channel_id)
-    #channel_id += 1
-    #print "new:",channel_id
     try:
-    #    print "in try"
         if args.verbose is True:
             print "read number", data.read_number
         readnumber = data.read_number
@@ -509,12 +233,10 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
         procampresdone[currentseq[channel_id]]+=1
         del currentseq[channel_id]
     if ((time.time()-readstarttime) > args.time):
-        #print "We have a timeout",channel_id
         if channel_id in procamprestime:
             procamprestime[channel_id]+=1
         else:
             procamprestime[channel_id]=1
-		#procamprestime[channel_id]+=1
         return 'timeout',channel_id_orig,readnumber,data.events[0].start
     else:
         try:
@@ -522,15 +244,13 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
             if (args.verbose is True):
                 print "Read start time",readstarttime
             try:
-                (seqmatchnameR,distanceR,frR,rsR,reR,qsR,qeR) = raw_squiggle_search2(squiggle[0:len(squiggle)],channel_id,readnumber,kmerhash_subset,len(squiggle))
+                (seqmatchnameR,distanceR,frR,rsR,reR,qsR,qeR) = squiggle_search2(squiggle[0:len(squiggle)],channel_id,readnumber,args,seqids,threedarray,len(squiggle))
             except:
                 print "MLPY FAILURE"
                 sys.exit()
             if (args.verbose is True):
                 print seqmatchnameR,distanceR,frR,rsR,reR,qsR,qeR
             try:
-                #print frR
-                #print startdict
                 if (frR == "F"):
                     amplicon, value = min(startdict.items(), key=lambda (_, v): abs(v - rsR))
                 else:
@@ -545,14 +265,11 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
                     combiname = amplicon
                 except:
                     print "combiname fail"
-
-                ###Get the number of currently sequencing amplicons of this set:
                 try:
                     dict2=dict(channeldict)
                     curseq=processchanneldict(dict2)
                 except:
                     print "Curseq assign failed"
-                #currentlysequence=0
                 try:
                     if combiname in curseq:
                         currentlysequence=curseq[combiname]
@@ -560,8 +277,6 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
                     print "setting currentlysequence failed"
             except:
                 print "channel dict fail"
-
-            #print currentlysequence
             if (args.verbose is True):
                 print "Args Depth ",args.depth
                 print "procampres ", procampres[combiname]
@@ -579,8 +294,6 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
                 print "Checking goal failed"
             try:
                 if (args.depth >= 0):
-                    #if (testset[combiname]+currentlysequence-args.deptherror > args.depth):
-                    #if (testset[combiname]+int(currentlysequence/2)-args.deptherror > args.depth):
                     correctionfactor=0
                     if args.precision:
                         correctionfactor = int(currentlysequence/2)
@@ -602,16 +315,9 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
                         procampresseq[combiname] +=1
                         currentseq[channel_id]=combiname
                 elif (len(customdepthslist)> 0):
-                    #print "Working on customdepthslist",combiname
-                    #print "name", combiname," current depth ",procampresseq[combiname]," required depth ",customdepthslist[combiname-1]
-                    #if (testset[combiname]+currentlysequence-args.deptherror >= int(customdepthslist[combiname-1])):
-                    #if (testset[combiname]+int(currentlysequence/2)-args.deptherror >= int(customdepthslist[combiname-1])):
                     correctionfactor=0
                     if args.precision:
-                        #print "precision on"
-                        #correctionfactor = int(currentlysequence/2)
                         correctionfactor = int(currentlysequence)
-                    #print (testset[combiname] + correctionfactor -args.deptherror)
                     if ((testset[combiname]+correctionfactor-args.deptherror) >= int(customdepthslist[combiname-1])):
                         if not args.inhibit:
                             result = "Skip"
@@ -624,7 +330,6 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
                             currentseq[channel_id]=combiname
                     else:
                         result = "Sequence"
-                        #result = "Skip"
                         if (args.verbose is True):
                             print "Sequence", procampres[combiname]
                         procampresseq[combiname] +=1
@@ -643,34 +348,17 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
                 readprediction[combiname][0][channel_id]["matchdistance"]=distanceR
             except:
                 print "Dictionary manipulation up the khyber"
-            #channel_id-=1
-            #print "restored:",channel_id
-            #print "Combiname", combiname
-            #print "Before random check",channel_id,result
             try:
-                #if args.simcheck and (np.random.uniform(0,9,1)>=0):
                 if args.simcheck:
-                    #print "passed random test"
-                    #if (args.verbose is True):
-                    #print channel_id,result
                     corrected_channel = channel_id
-
-                    #if (np.random.uniform(0,9,1)>=0 and result == "Sequence"):
                     if (result == "Sequence"):
-                        #print "Sequenced read hairpin write"
                         f = h5py.File(args.watchdir+'/test_ch'+str(corrected_channel)+'_file'+str(readnumber)+'_strand_2d_'+str(combiname)+'.fast5','w')
                         f.create_group("/UniqueGlobalKey/channel_id").attrs['channel_number'] = str(corrected_channel)
                         f.create_group("/Analyses/EventDetection_000/Reads/Read_"+str(readnumber)).attrs['hairpin_found'] = 1
                     else:
-                        #print "Non sequence read don't print hairpin"
                         f = h5py.File(args.watchdir+'/test_ch'+str(corrected_channel)+'_file'+str(readnumber)+'_strand_1d_'+str(combiname)+'.fast5','w')
                         f.create_group("/UniqueGlobalKey/channel_id").attrs['channel_number'] = str(corrected_channel)
                         f.create_group("/Analyses/EventDetection_000/Reads/Read_"+str(readnumber)).attrs['hairpin_found'] = 0
-                    #print type (data.events)
-                    #dataarray=[]
-                    #for event in data.events:
-                        #print event
-                    #    dataarray.append((event.start,event.length,event.mean,event.sd))
                     dataarray=[(event.start,event.length,event.mean,event.sd) for event in data.events]
                     numpydata = np.array(dataarray)
                     comp_type = np.dtype([('start', np.uint64), ('length', np.uint32), ('mean', np.float64), ('variance', np.float64)])
@@ -700,33 +388,6 @@ def amplicon_worker((channel_id, data,seqlen,readstarttime,kmerhash_subset,start
 
 #############################
 
-def channeldictexpire(channeldict):
-    '''
-    Function loops through a dictionary to test if a read is too old to plausibly exist anymore.
-    Removes reads which must either be blocked or failed.
-    '''
-    for key in channeldict.keys():
-        for item,value in channeldict[key].items():
-            if time.time()-value > readtimeout:
-                del channeldict[key]
-
-
-
-def processchanneldict(channeldict):
-    dtype = [('channel',int),('amplicon',int),('startsamples',float)]
-    arr=[]
-    for a,_ in channeldict.items():
-        for k,_ in channeldict[a].items():
-            arr.append((a,k,channeldict[a][k]))
-    values=np.array(arr,dtype=dtype)
-    c=list(np.sort(values,order='amplicon'))
-    d=map(lambda (x,y,z):y,c)
-    lut=dict()
-    for x in set(d):
-        lut[x]=d.count(x)
-    return lut
-
-
 def checkevents(meansquiggle,meantime,channel_id,eventdict):
     counter=0
     #correct for position 1 frame shift
@@ -744,7 +405,7 @@ def checkevents(meansquiggle,meantime,channel_id,eventdict):
             print "meansquiggle", meansquiggle
         if subevents[event]["mean"] in meansquiggle:
             if (args.verbose is True):
-                print "WHOOP WHOOP - FOUND IT!",channel_id
+                print "FOUND match IT!",channel_id
             indexpos = meansquiggle.index(subevents[event]["mean"])
             if meantime[indexpos] == subevents[event]["start"]:
                 if (args.verbose is True):
@@ -830,9 +491,10 @@ def process_fast5((filepath,eventdict,procampresfile,procampres2d)):
 class MyHandler(FileSystemEventHandler):
 
 
-    def __init__(self):
+    def __init__(self,args):
         #We dont care about already existing files when we start this running
         #self.creates=file_dict_of_folder(args.watchdir)
+        self.args=args
         self.creates=dict()
         self.processed=dict()
         self.running = True
@@ -844,7 +506,7 @@ class MyHandler(FileSystemEventHandler):
             t.start()
         except (KeyboardInterrupt, SystemExit):
             t.stop()
-            die_nicely()
+            die_nicely(oper)
 
 
     def processfiles(self):
@@ -922,8 +584,11 @@ class MyAnalyser:
     """
 
 
-    def __init__(self):
+    def __init__(self,args,p,seqids,threedarray,endcollection,startcollection):
         self.current_unblock_map = LockedDict()
+        self.startcollection=startcollection
+        self.endcollection=endcollection
+        #print threedarray
         #self.eventdict=dict()
 
     def mycallback(self, actions):
@@ -985,12 +650,7 @@ class MyAnalyser:
     def apply_async_with_callback(self, channels):
         d=list()
         for channel_id, data in channels.iteritems():
-            if args.custom is True:
-                #print "Custom"
-                p.apply_async(amplicon_worker, args = ((channel_id,data,seqlengths,time.time(),kmerhashTRU,correctedampstartdict,correctedampenddict,procampres,procampresrej,procampresseq,currentseq,procampresdone,procampresfile,procampres2d,args,customdepthslist,procamprestime,eventdict,channeldict), ), callback = self.mycallback)
-            else:
-                #print "Whole Genome"
-                p.apply_async(amplicon_worker, args = ((channel_id,data,seqlengths,time.time(),kmerhashT,ampstartdict,ampenddict,procampres,procampresrej,procampresseq,currentseq,procampresdone,procampresfile,procampres2d,args,customdepthslist,procamprestime,eventdict,channeldict), ), callback = self.mycallback)
+            p.apply_async(amplicon_worker, args = ((channel_id,data,seqlengths,time.time(),seqids,threedarray,self.startcollection,self.endcollection,procampres,procampresrej,procampresseq,currentseq,procampresdone,procampresfile,procampres2d,args,customdepthslist,procamprestime,eventdict,channeldict), ), callback = self.mycallback)
 
     def next_unblock_map(self):
         """
@@ -1037,14 +697,14 @@ def sum_dict(dictionarytosum):
 
 
 def run_analysis(args,procampres2d,customdepthslist):
-    analyser = MyAnalyser()
+
     host = "ws://"+str(args.ip)+":"+str(args.port)+"/"
     #host = "ws://127.0.0.1:5999/"
-    setup_conditions = {"ignore_first_events": 75, "padding_length_events": 0,
+    setup_conditions = {"ignore_first_events": 100, "padding_length_events": 0,
                     "events_length": 250, "repetitions": 1}
 
     state=RunningState()
-    event_handler = MyHandler()
+    event_handler = MyHandler(args)
     observer = Observer()
     observer.schedule(event_handler, path=args.watchdir, recursive=False)
     observer.daemon=True
@@ -1070,7 +730,7 @@ def run_analysis(args,procampres2d,customdepthslist):
                     testset = procampres2d
                 else:
                     print "Test set not recognised - quitting for sanity. -g should be set to either 'file','2d' or 'read' i.e -g read -g 2d -g file"
-                    die_nicely()
+                    die_nicely(oper)
                 if check_completion(testset,args,customdepthslist):
                     #print "The minoTours work is done. You should stop sequencing now!"
                     if not args.inhibit and args.stoprun:
@@ -1093,7 +753,7 @@ def run_analysis(args,procampres2d,customdepthslist):
                             endmessage2 = '{"id":"1", "method":"user_message","params":{"content":"The minoTours work is done - however the run has not been stopped automatically."}}'
                             print "The minoTours work is done but sequencing has not been stopped. To enable run stopping use the -s option."
                             results = execute_command_as_string(endmessage2,args.ip,8000)
-                        die_nicely()
+                        die_nicely(oper)
                     else:
                         if (messagesent < 3):
                             endmessage = '{"id":"1", "method":"user_message","params":{"content":"minoTour software has detected coverage of at least '+str(args.depth)+'x on each amplicon and suggests that you stop minKNOW now."}}'
@@ -1101,7 +761,7 @@ def run_analysis(args,procampres2d,customdepthslist):
                             print "You have reached your goal now. Sequencing should be stopped now!"
                             messagesent += 1
                         if (messagesent == 3):
-                            die_nicely()
+                            die_nicely(oper)
                 #print "test ublock len"
                 if len(unblock_now)>0:
                     #if (args.verbosegen is True):
@@ -1124,41 +784,11 @@ def run_analysis(args,procampres2d,customdepthslist):
         my_client.stop()
         observer.stop()
         observer.join()
-        die_nicely()
+        die_nicely(oper)
 
 
 
-def query_yes_no(question, default="yes"):
-    """Ask a yes/no question via raw_input() and return their answer.
 
-    "question" is a string that is presented to the user.
-    "default" is the presumed answer if the user just hits <Enter>.
-        It must be "yes" (the default), "no" or None (meaning
-        an answer is required of the user).
-
-    The "answer" return value is True for "yes" or False for "no".
-    """
-    valid = {"yes": True, "y": True, "ye": True,
-             "no": False, "n": False}
-    if default is None:
-        prompt = " [y/n] "
-    elif default == "yes":
-        prompt = " [Y/n] "
-    elif default == "no":
-        prompt = " [y/N] "
-    else:
-        raise ValueError("invalid default answer: '%s'" % default)
-
-    while True:
-        sys.stdout.write(question + prompt)
-        choice = raw_input().lower()
-        if default is not None and choice == '':
-            return valid[default]
-        elif choice in valid:
-            return valid[choice]
-        else:
-            sys.stdout.write("Please respond with 'yes' or 'no' "
-                             "(or 'y' or 'n').\n")
 
 '''class ThreadingExample(blinkstick.BlinkStickPro):
     """ Threading example class
@@ -1289,21 +919,7 @@ def query_yes_no(question, default="yes"):
             #sys.exit()
 '''
 
-def die_nicely():
-    print "terminating sub-processes...."
 
-    pid = os.getpid()
-
-    # Tell minup to terminate
-    if oper == "windows":
-        # -- sending minup pid a Ctrl-C signal
-        # -- this also cleanly closes subprocesses and threads ....
-        ctypes.windll.kernel32.GenerateConsoleCtrlEvent(0, pid) # 0 => Ctrl-C
-    else:
-        process = psutil.Process(pid)
-        for proc in process.children(recursive=True):
-            proc.kill()
-    process.kill()
 
 if __name__ == "__main__":
     #Supposedly handling multiprocessing problems
@@ -1331,8 +947,8 @@ if __name__ == "__main__":
     if (oper is "windows"):
         config_file = os.path.join(os.path.sep, os.path.dirname(os.path.realpath('__file__')), 'aReadUntil.config')
 
-    __version__ = "1.1"
-    __date__ = "3rd April 2016"
+    __version__ = "1.2"
+    __date__ = "8th April 2016"
 
     #global #blinker
     #blinker = ThreadingExample(r_led_count=8, max_rgb_value=128)
@@ -1352,8 +968,6 @@ if __name__ == "__main__":
     parser.add('-g', '--goal',type=str, required=True, help = 'The measure by which reads will be counted - either based on the presence of files ( -g file) or potential 2D files generated (-g 2d) or new reads generated ( -g read )', dest='goal')
     parser.add('-precision', action='store_true', help="This option will attempt to obtain exactly the number of reads required per amplicon. It is provided as a novelty to illustrate the theoretical level of control of the device. In reality it will slow down the time taken to reach a specific goal due to the possibility of reads failing and the delay in writing true reads to disk.", default=False,dest='precision')
     parser.add('-seq', '--seq-speed', type=int, default=30, required=False, help="This is the assumed sequencing speed. The default is set at 30b/s (the speed of the simulator). This should be configured to the appropriate value for your chemistry.", dest='speed')
-    #parser.add('-l', '--model_length',type=int, required=True, help = 'The word size of the mode file - e.g 5,6 or 7', dest='model_length')
-    #parser.add('-mi', '--model_index',type=int, required=False, default=2, help = 'The position of the mean values in the model file. If this is wrong it will be reported to you we hope.', dest='model_index')
     parser.add('-i', action='store_true', help="This will prevent read until from working but will otherwise report what is happening in the sequencer.", default=False,dest='inhibit')
     parser.add('-s', action='store_true', help="This will enable read until to stop your sequencing when it is complete.", default=False,dest='stoprun')
     parser.add('-ip', '--ip-address', type=str ,dest='ip',required=False,default="127.0.0.1", help="The IP address of the minKNOW machine.")
@@ -1374,21 +988,21 @@ if __name__ == "__main__":
         print "You can only set depth (-d) or custom depth (-cd), not both! Please try again!"
         #blinker.setjob("warning","red")
         #time.sleep(2)
-        die_nicely()
+        die_nicely(oper)
     if (len(args.customdepth) < 1 and args.depth < 1):
         print "You must set either depth (-d) or custom depth (-cd). Please try again!"
         #blinker.setjob("warning","red")
         #time.sleep(2)
-        die_nicely()
+        die_nicely(oper)
 
     #Check to see if folder exists.
 
     if not os.path.isdir(args.watchdir):
         print "Sorry, but the folder "+args.watchdir+" cannot be found.\n\nPlease check you have entered the path correctly and try again.\n\nThis script will now terminate.\n"
-        die_nicely()
+        die_nicely(oper)
 
 
-    global p
+    #global p
 
     p = multiprocessing.Pool(args.procs)
 
@@ -1418,18 +1032,14 @@ if __name__ == "__main__":
     results = execute_command_as_string(startmessagenew,args.ip,8000)
 
 
-
-    #This parameter defines how much sequence we will extract around each amplicon for our custom reference.
     readuntilrange = 800
 
-    #Reading in amplicons for analysis
     amplicon_file = open(args.ids, "r")
     amplicons = []
     for line in amplicon_file.readlines():
         amplicons.append(line.rstrip())
     if (args.verbose is True):
         print amplicons
-
     amplicon_file.close()
     #Creating a dictionary of depths to test against for each amplicon
     global customdepthslist
@@ -1439,28 +1049,25 @@ if __name__ == "__main__":
     else:
         for amplicon in amplicons:
             customdepthslist.append(0)
-    #print customdepthslist
-
-    #Processing the fasta file for matching
-    #blinker.setjob("light","steelblue")
     fasta_file = args.fasta #fasta file
     model_file_template = args.temp_model #model file
     model_kmer_means_template,kmer_len=process_model_file(model_file_template) #getting lookup dict of kmers and means
-    global kmerhashT #declaring globally a variable to store the kmerhash representing the refernce
-    kmerhashT = process_ref_fasta_raw(fasta_file,model_kmer_means_template,args,kmer_len) #assign the reference to the hash
+    #global kmerhashT #declaring globally a variable to store the kmerhash representing the refernce
+    #kmerhashT = process_ref_fasta(fasta_file,model_kmer_means_template,kmer_len) #assign the reference to the hash
+    #global seqids,threedarray
     global seqlengths #global declaration of sequence lengths
     seqlengths = get_seq_len(fasta_file) # setting seqeunce lengths
     print seqlengths
     #get_amplicons(amplicons,seqlengths,args) #this seems pointless
     ampdict=[]
-    global ampstartdict #holds the start positions of each amplicon
+    #global ampstartdict #holds the start positions of each amplicon
     ampstartdict=dict()
-    global ampenddict # holds the end position of eeach amplicon
+    #global ampenddict # holds the end position of eeach amplicon
     ampenddict=dict()
     correctedampdict=[] #a dictionary holding corrected amplicon positions for a truncated reference
-    global correctedampstartdict
+    #global correctedampstartdict
     correctedampstartdict=dict() #a dictionary holding corrected amplicon start positions
-    global correctedampenddict
+    #global correctedampenddict
     correctedampenddict=dict() #a dictionary holding corrected amplicon end positions
     counter = 0
     #A dict of seen sequences
@@ -1493,8 +1100,6 @@ if __name__ == "__main__":
     #This dict will hold a list of channels, the amplicon type and the start time
     global channeldict
     channeldict=manager.dict()
-    #eventdict=dict()
-
     meanlengthcount=0
     amplength=0
     for amplicon in amplicons:
@@ -1518,16 +1123,13 @@ if __name__ == "__main__":
     global ampliconmeanlength
     ampliconmeanlength = amplength/meanlengthcount
     print "Autocalculated time threshold(s):",readtimeout
-
     if (args.verbose is True):
         print "******AMP DICTIONARY*******"
         print type(ampstartdict)
         print ampstartdict
     readprediction=dict()
-
     if (args.verbose is True):
         print procampres
-
     if (args.verbose is True):
         print "We want to build a custom reference that is smaller than the original reference."
         print "First get a list of all the positions we will need to search"
@@ -1539,10 +1141,8 @@ if __name__ == "__main__":
         ampstop = int(float(amplicon.split(':', 1 )[1].split('-',1)[1]))
         keypositions[amplicon.split(':',1)[0]].append(ampstart)
         keypositions[amplicon.split(':',1)[0]].append(ampstop)
-
     for sequence in keypositions:
         keypositions[sequence].sort()
-
     ranges=dict()
     for sequence in keypositions:
         if (sequence not in ranges):
@@ -1553,10 +1153,8 @@ if __name__ == "__main__":
                 start = 1
             stop = position + readuntilrange
             ranges[sequence].append((start,stop))
-
     for sequence in ranges:
         ranges[sequence] = list(merge_ranges((ranges[sequence])))
-
     correctedamplicons=list()
     counter=0
     for amplicon in amplicons:
@@ -1567,31 +1165,21 @@ if __name__ == "__main__":
         correctedamplicons.append(amplicon.split(':',1)[0]+':'+str(correctposition(ampstart,ranges,amplicon.split(':',1)[0]))+'-'+str(correctposition(ampstop,ranges,amplicon.split(':',1)[0])))
         correctedampstartdict[counter]=correctposition(ampstart,ranges,amplicon.split(':',1)[0])
         correctedampenddict[counter]=correctposition(ampstop,ranges,amplicon.split(':',1)[0])
+    #global kmerhashTRU
+    #customfasta = get_custom_fasta(fasta_file,ranges,args)
+    if args.custom is True:
+        seqids,threedarray = get_custom_fasta(fasta_file,ranges,args,model_kmer_means_template,kmer_len) #assign the reference to the hash
+        ends,starts = correctedampenddict,correctedampstartdict
+    else:
+        seqids,threedarray = process_ref_fasta(fasta_file,model_kmer_means_template,kmer_len) #assign the reference to the hash
+        ends,starts = ampenddict,ampstartdict
 
-    #print ampstartdict
-    #print correctedampstartdict
-    #print correctedamplicons
-    #sys.exit()
-
-    global kmerhashTRU
-    kmerhashTRU = get_custom_fasta(fasta_file,model_kmer_means_template,ranges,args,kmer_len)
-
-    '''for key in kmerhashT:
-        for key2 in kmerhashT[key]:
-            print key,key2,len(kmerhashT[key][key2])
-
-    for key in kmerhashTRU:
-        for key2 in kmerhashTRU[key]:
-            print key,key2,len(kmerhashTRU[key][key2])
-    '''
-
+    #global seqidscust,threedarraycust
     global current_time
     current_time = time.time()
     if (args.verbose is True):
         print current_time
-        for id in kmerhashTRU:
-            for ref in kmerhashTRU[id]:
-                print id,ref
+
     print "                                    `       "
     print "              ;`               ,;       "
     print "               :;;;;;;;;;;;;;;;,        "
@@ -1624,7 +1212,7 @@ if __name__ == "__main__":
             time.sleep(2)
             #blinker.setjob("lightoff","black")
             time.sleep(1)
-            die_nicely()
+            die_nicely(oper)
     sample_id = '{"id":"1","method":"get_engine_state","params":{"state_id":"sample_id"}}'
     sampleid = execute_command_as_string(sample_id,args.ip,8000)
     print "Sample Name is: ",sampleid["result"]
@@ -1632,7 +1220,10 @@ if __name__ == "__main__":
     current_time = time.time()
     print current_time
 
-    #try:
+    print starts
+    print ends
+    analyser = MyAnalyser(args,p,seqids,threedarray,ends,starts)
+
     while 1:
         try:
             try:
@@ -1649,4 +1240,4 @@ if __name__ == "__main__":
             time.sleep(5) # Wait a bit and try again
         except (KeyboardInterrupt, SystemExit):
             print "caught ctrl-c in run loop"
-            die_nicely()
+            die_nicely(oper)
