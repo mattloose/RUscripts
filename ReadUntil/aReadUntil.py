@@ -1240,4 +1240,6 @@ if __name__ == "__main__":
             time.sleep(5) # Wait a bit and try again
         except (KeyboardInterrupt, SystemExit):
             print "caught ctrl-c in run loop"
+            p.close()
+            p.terminate()
             die_nicely(oper)

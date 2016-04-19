@@ -538,11 +538,12 @@ def die_nicely(oper):
 
     # Tell minup to terminate
     if oper == "windows":
+        sys.exit()
         # -- sending minup pid a Ctrl-C signal
         # -- this also cleanly closes subprocesses and threads ....
-        ctypes.windll.kernel32.GenerateConsoleCtrlEvent(0, pid) # 0 => Ctrl-C
+        #ctypes.windll.kernel32.GenerateConsoleCtrlEvent(0, pid) # 0 => Ctrl-C
     else:
         process = psutil.Process(pid)
         for proc in process.children(recursive=True):
             proc.kill()
-    process.kill()
+        process.kill()
