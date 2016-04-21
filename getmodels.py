@@ -1,7 +1,11 @@
 #!/usr/bin/env python
-import sys
+import sys,os
 import h5py
 import configargparse
+sys.path.append("ReadUntil")
+from ruutils import query_yes_no
+
+
 
 __version__ = "1.0"
 __date__ = "29th March 2016"
@@ -66,7 +70,7 @@ if __name__ == "__main__":
 
 
     if (args.read is None):
-        print "You must pass a single read file to this script using the -read option."
+        print "You must pass a single read file to this script using the -r option."
         print "*** This code will now exit. It has not written out any model files."
         sys.exit()
 
@@ -96,6 +100,9 @@ if __name__ == "__main__":
                 for entry in range(0,len(hdf[temp1][temp2][temp3][temp4].dtype.descr)):
                     lookuparray[hdf[temp1][temp2][temp3][temp4].dtype.descr[entry][0]]=entry
                 kmerlen = str(len(hdf[temp1][temp2][temp3][temp4][0][lookuparray['kmer']]))
+                if os.path.isfile(model+"_"+ modeltype + "_" + kmerlen +".model"):
+                    if not query_yes_no("It looks like this model file already exists.\nOverwriting this file should cause no problems as long as your source read file contains the most recent model for your chemistry and pore type OR is the correct type for the files you are working with.\nAre you happy to proceed?"):
+                        os._exit(1)
                 file = open(model+"_"+ modeltype + "_" + kmerlen +".model", "w")
                 file.write("kmer\tlevel_mean\tlevel_stdv\n")
                 for kmerrow in range(0,len(hdf[temp1][temp2][temp3][temp4])):

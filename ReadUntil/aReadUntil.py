@@ -508,30 +508,36 @@ class MyHandler(FileSystemEventHandler):
             t.stop()
             die_nicely(oper)
 
+    def lencreates(self):
+        return len(self.creates)
+
+    def lenprocessed(self):
+        return len(self.processed)
+
 
     def processfiles(self):
         everyten=0
         while self.running:
-            ts = time.time()
+            #ts = time.time()
             #blinkgo(bstick)
             #blinker.setjob("single","dimgrey")
-            print datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), "CACHED:", len(self.creates), "PROCESSED:",  len(self.processed)
-            if (args.verbosegen is True):
-                print "obs:",procampres
-                print "rej:",procampresrej
-                print "seq:",procampresseq
-            print time.ctime(),": Obs:",sum_dict(procampres),"Rej:",sum_dict(procampresrej),"Seq:",sum_dict(procampresseq),"Done:",sum_dict(procampresdone),"File:",sum_dict(procampresfile),"2D:",sum_dict(procampres2d)
-            print "Obs Details:",procampres
-            print "Rej Details:",procampresrej
-            print "Seq Details:",procampresseq
-            print "DoneDetails:",procampresdone
-            print "FileDetails:",procampresfile
-            print "2D  Details:",procampres2d
+            #print datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), "CACHED:", self.lencreates(), "PROCESSED:",  self.lenprocessed()
+            #if (args.verbosegen is True):
+            #    print "obs:",procampres
+            #    print "rej:",procampresrej
+            #    print "seq:",procampresseq
+            #print time.ctime(),": Obs:",sum_dict(procampres),"Rej:",sum_dict(procampresrej),"Seq:",sum_dict(procampresseq),"Done:",sum_dict(procampresdone),"File:",sum_dict(procampresfile),"2D:",sum_dict(procampres2d)
+            #print "Obs Details:",procampres
+            #print "Rej Details:",procampresrej
+            #print "Seq Details:",procampresseq
+            #print "DoneDetails:",procampresdone
+            #print "FileDetails:",procampresfile
+            #print "2D  Details:",procampres2d
             #print channeldict
-            dict2=dict(channeldict)
-            print "CurSDetails:",processchanneldict(dict2)
+            #dict2=dict(channeldict)
+            #print "CurSDetails:",processchanneldict(dict2)
             ## Now we try and clean the channeldict of 'old reads'
-            channeldictexpire(channeldict)
+            ##channeldictexpire(channeldict)
             for fast5file, createtime in sorted(self.creates.items(), key=lambda x: x[1]):
                 #tn=time.time()
                 if (args.verbose is True):
@@ -772,6 +778,25 @@ def run_analysis(args,procampres2d,customdepthslist):
                     my_client.unblock(unblock_now)
                 else:
                     next
+
+                ts = time.time()
+                print datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'), "CACHED:", event_handler.lencreates(), "PROCESSED:",  event_handler.lenprocessed()
+                if (args.verbosegen is True):
+                    print "obs:",procampres
+                    print "rej:",procampresrej
+                    print "seq:",procampresseq
+                print time.ctime(),": Obs:",sum_dict(procampres),"Rej:",sum_dict(procampresrej),"Seq:",sum_dict(procampresseq),"Done:",sum_dict(procampresdone),"File:",sum_dict(procampresfile),"2D:",sum_dict(procampres2d)
+                print "Obs Details:",procampres
+                print "Rej Details:",procampresrej
+                print "Seq Details:",procampresseq
+                print "DoneDetails:",procampresdone
+                print "FileDetails:",procampresfile
+                print "2D  Details:",procampres2d
+                #print channeldict
+                dict2=dict(channeldict)
+                print "CurSDetails:",processchanneldict(dict2)
+                ## Now we try and clean the channeldict of 'old reads'
+                channeldictexpire(channeldict)
 
 
             # Throttle rate at which we make unblock controls. Although
