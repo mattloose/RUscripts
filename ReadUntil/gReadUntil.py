@@ -50,7 +50,7 @@ def run_analysis(args,analyser):
     #analyser = MyAnalyser(args)
     host = "ws://"+str(args.ip)+":"+str(args.port)+"/"
     setup_conditions = {"ignore_first_events": 75, "padding_length_events": 0,
-                        "events_length": 128, "repetitions": 1}
+                        "events_length": 250, "repetitions": 1}
 
     state=RunningState()
     with ReadUntil(host=host,
@@ -74,7 +74,7 @@ def run_analysis(args,analyser):
             # Throttle rate at which we make unblock controls. Although
             # unblocks should be timely, it is more efficient on the network
             # and on the hardware to unblock a bigger list of channels at once.
-            time.sleep(1)
+            time.sleep(15)
         print "...unblock loop ended. Connection closed."
 
 class MyAnalyser:
