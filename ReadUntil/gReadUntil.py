@@ -74,7 +74,7 @@ def run_analysis(args,analyser):
             # Throttle rate at which we make unblock controls. Although
             # unblocks should be timely, it is more efficient on the network
             # and on the hardware to unblock a bigger list of channels at once.
-            time.sleep(15)
+            time.sleep(1)
         print "...unblock loop ended. Connection closed."
 
 class MyAnalyser:
@@ -174,6 +174,16 @@ if __name__ == "__main__":
     parser.add_argument('-ver', '--version', action='version',version=('%(prog)s version={version} date={date}').format(version=__version__,date=__date__))
     #global args
     args = parser.parse_args()
+
+    ###Check files
+
+    if not os.path.isfile(args.fasta):
+        print "\n**! The fasta file cannot be found - please check your path and file name under the -fasta option.\n"
+        sys.exit()
+
+    if not os.path.isfile(args.temp_model):
+        print "\n**! The model file cannot be found - please check your path and file name under the -model option.\n"
+        sys.exit()
 
 
     fasta_file = args.fasta

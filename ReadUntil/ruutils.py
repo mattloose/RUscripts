@@ -203,18 +203,22 @@ def squiggle_search2(squiggle,channel_id,read_id,args,seqids,threedarray,seqlen)
     for ref in seqids:
         refid=seqids.index(ref)
         Rprime,Fprime=threedarray[refid]
-        queryarray = sklearn.preprocessing.scale(np.array(squiggle),axis=0,with_mean=True,with_std=True,copy=True)
+        #queryarray = sklearn.preprocessing.scale(np.array(squiggle),axis=0,with_mean=True,with_std=True,copy=True)
+        queryarray = sklearn.preprocessing.scale(np.array(squiggle,dtype=float),axis=0,with_mean=True,with_std=True,copy=True)
         refsubset = Fprime
         indexes = np.array(xrange(len(refsubset)))
         subrefs = [refsubset[i:i+blocksize]for i in indexes[::overlap]]
         for blockid,ref_ in enumerate(subrefs):
-            current = multiprocessing.current_process()
+            #current = multiprocessing.current_process()
+            tic = time.time()
             dist, cost, path = mlpy.dtw_subsequence(queryarray,ref_)
             #result.append((dist,ref,"F",path[1][0],path[1][-1],path[0][0],path[0][-1]))
             result.append((dist,ref,"F",path[1][0]+(blockid*overlap),path[1][-1]+(blockid*overlap),path[0][0],path[0][-1]))
+            print "Blockid", blockid, time.time()-tic
         refsubset = Rprime
         subrefs = [refsubset[i:i+blocksize]for i in indexes[::overlap]]
         for blockid,ref_ in enumerate(subrefs):
+            print "Blockid", blockid, time.time()
             dist, cost, path = mlpy.dtw_subsequence(queryarray,ref_)
             #result.append((dist,ref,"R",path[1][0]+(blockid*overlap),ref))
             result.append((dist,ref,"R",(len(Rprime)-(path[1][-1]+(blockid*overlap))),(len(Rprime)-(path[1][0]+(blockid*overlap))),path[0][0],path[0][-1]))
