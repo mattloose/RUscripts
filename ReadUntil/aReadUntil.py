@@ -39,12 +39,7 @@ from pstats import Stats
 import platform
 
 from ruutils import process_model_file,query_yes_no,send_message,execute_command_as_string,get_seq_len,squiggle_search2,get_custom_fasta
-from ruutils import file_dict_of_folder,scaleLocally,scale,merge_ranges,correctposition,extractsquig,die_nicely,process_ref_fasta
-
-
-######################################################
-
-
+from ruutils import file_dict_of_folder,scaleLocally,scale,merge_ranges,correctposition,extractsquig,die_nicely,process_ref_fasta,check_files,checkfasta
 
 
 ######################################################
@@ -67,40 +62,6 @@ def get_amplicons(amplicons,seqlengths,args):
             print REVERSE_stop
             print REVERSE_start
 
-
-#####################################################
-'''
-def process_ref_barcodes(ref_fasta,model_kmer_means,barcodes,amplicons):
-    kmer_len=args.model_length
-    kmer_means=dict()
-    for record in SeqIO.parse(ref_fasta, 'fasta'):
-        for amplicon in amplicons:
-            ampstart = int(float(amplicon.split(':', 1 )[1].split('-',1)[0]))
-            ampstop = int(float(amplicon.split(':', 1 )[1].split('-',1)[1]))
-            seqid = amplicon.split(':', 1)[0]
-
-            if (record.id == seqid):
-                kmer_means[record.id]=dict()
-                for barcoderecord in SeqIO.parse(barcodes,'fasta'):
-                    kmer_means[record.id][barcoderecord.id]=dict()
-                    kmer_means[record.id][barcoderecord.id]["F"]=list()
-                    kmer_means[record.id][barcoderecord.id]["Fprime"]=list()
-                    seq = barcoderecord.seq+record.seq[ampstart-1:ampstart-1+300]
-                    for x in range(len(seq)+1-kmer_len):
-                        kmer = str(seq[x:x+kmer_len])
-                        kmer_means[record.id][barcoderecord.id]["F"].append(float(model_kmer_means[kmer]))
-                    kmer_means[record.id][barcoderecord.id]["R"]=list()
-                    kmer_means[record.id][barcoderecord.id]["Rprime"]=list()
-                    seq = barcoderecord.seq+record.seq[ampstop-1-300:ampstop-1].reverse_complement()
-                    for x in range(len(seq)+1-kmer_len):
-                        kmer = str(seq[x:x+kmer_len])
-                        kmer_means[record.id][barcoderecord.id]["R"].append(float(model_kmer_means[kmer]))
-                    kmer_means[record.id][barcoderecord.id]["Fprime"]=sklearn.preprocessing.scale(kmer_means[record.id][barcoderecord.id]["F"], axis=0, with_mean=True, with_std=True, copy=True)
-                    kmer_means[record.id][barcoderecord.id]["Rprime"]=sklearn.preprocessing.scale(kmer_means[record.id][barcoderecord.id]["R"], axis=0, with_mean=True, with_std=True, copy=True)
-            else:
-                print "No Match"
-    return kmer_means
-'''
 ######################################################
 def process_ref_fasta2(ref_fasta,model_kmer_means):
     if (args.verbose is True):
@@ -131,27 +92,6 @@ def runProcess(exe):
         if(retcode is not None):
             break
 
-
-
-##############################
-
-'''
-def check_barcode(squiggle,barcodes_hash,seqmatchnameR,frR):
-    result=[]
-    queryarray = sklearn.preprocessing.scale(np.array(squiggle[0:50]),axis=0,with_mean=True,with_std=True,copy=True)
-    for ref in barcodes_hash[seqmatchnameR]:
-        try:
-            if (frR == "F"):
-                dist, cost, path = mlpy.dtw_subsequence(queryarray,barcodes_hash[seqmatchnameR][ref]['Fprime'])
-                result.append((dist,ref,"F",path[1][0],path[1][-1],path[0][0],path[0][-1]))
-            else:
-                dist, cost, path = mlpy.dtw_subsequence(queryarray,barcodes_hash[seqmatchnameR][ref]['Rprime'])
-                result.append((dist,ref,"R",path[1][0],path[1][-1],path[0][0],path[0][-1]))
-        except Exception,err:
-            print "Barcode Warp Fail"
-    return sorted(result,key=lambda result: result[0])[0][1],sorted(result,key=lambda result: result[0])[0][0],sorted(result,key=lambda result: result[0])[0][2],sorted(result,key=lambda result: result[0])[0][3],sorted(result,key=lambda result: result[0])[0][4],sorted(result,key=lambda result: result[0])[0][5],sorted(result,key=lambda result: result[0])[0][6]
-
-'''
 
 
 
@@ -812,140 +752,6 @@ def run_analysis(args,procampres2d,customdepthslist):
         die_nicely(oper)
 
 
-
-
-
-'''class ThreadingExample(blinkstick.BlinkStickPro):
-    """ Threading example class
-
-    The run() method will be started and it will run in the background
-    until the application exits.
-    """
-
-    def __init__(self, *args, **kwargs):
-        """ Constructor
-
-        :type interval: int
-        :param interval: Check interval, in seconds
-        """
-        super(ThreadingExample, self).__init__(*args, **kwargs)
-        print "initialising lighting class"
-        self.interval = 1
-        self.job = "wait state"
-
-        thread = threading.Thread(target=self.run, args=())
-        thread.daemon = True                            # Daemonize thread
-        thread.start()                                  # Start the execution
-
-
-
-    def setjob(self,task,color):
-        #print task
-        self.job = task
-        self.color = color
-
-    def run(self):
-        """ Method that runs forever """
-        if self.connect():
-            self.send_data_all()
-            self.color="white"
-            while True:
-                # Do something
-                #print('Doing something imporant in the background')
-                #print self.job
-                if self.job == 'light':
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,name=self.color)
-                        except:
-                            next
-                        time.sleep(0.15)
-                        try:
-                            self.bstick.set_color(0,i,0,0,0)
-                        except:
-                            next
-                elif self.job == 'lightoff':
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,0,0,0)
-                        except:
-                            next
-                elif self.job == 'single':
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,0,0,0)
-                        except:
-                            next
-                        try:
-                            self.bstick.set_color(0,1,name=self.color)
-                        except:
-                            next
-                elif self.job == 'solid':
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,name=self.color)
-                        except:
-                            next
-                elif self.job == 'warning':
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,name=self.color)
-                        except:
-                            next
-                    time.sleep(0.1)
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,0,0,0)
-                        except:
-                            next
-                    time.sleep(0.1)
-                elif self.job == 'blink':
-                    for i in range(0,8,2):
-                        try:
-                            self.bstick.set_color(0,i,name=self.color)
-                        except:
-                            next
-                        try:
-                            self.bstick.set_color(0,i+1,0,0,0)
-                        except:
-                            next
-                    time.sleep(0.3)
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,0,0,0)
-                        except:
-                            next
-                    time.sleep(0.05)
-                    for i in range(0,8,2):
-                        try:
-                            self.bstick.set_color(0,i+1,name=self.color)
-                        except:
-                            next
-                        try:
-                            self.bstick.set_color(0,i,0,0,0)
-                        except:
-                            next
-                    time.sleep(0.3)
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,0,0,0)
-                        except:
-                            next
-                    time.sleep(0.05)
-                else:
-                    for i in range(0,8,1):
-                        try:
-                            self.bstick.set_color(0,i,0,0,0)
-                        except:
-                            next
-                #time.sleep(self.interval)
-        else:
-            print "No Blink Stick Detected"
-            #sys.exit()
-'''
-
-
-
 if __name__ == "__main__":
     #Supposedly handling multiprocessing problems
     multiprocessing.freeze_support()
@@ -989,7 +795,7 @@ if __name__ == "__main__":
     parser.add('-e', '--error',type=int, required=True, default=0, help = 'Set an error range for coverage depth.', dest='deptherror')
     parser.add('-procs', '--processor-number', type=int, dest='procs',required=True, help = 'The number of processors to run this on.')
     parser.add('-t', '--time', type=int, dest='time', required=True, default=300, help="This is an error catch for when we cannot keep up with the rate of sequencing on the device. It takes a finite amount of time to process through the all the channels from the sequencer. If we cannot process through the array quickly enough then we will \'fall behind\' and lose the ability to filter sequences. Rather than do that we set a threshold after which we allow the sequencing to complete naturally. The default is 300 seconds which equates to 9kb of sequencing at the standard rate.")
-    parser.add('-m', '--tempalte-model',type=str, required=True, help = 'The appropriate template model file to use', dest='temp_model')
+    parser.add('-m', '--template-model',type=str, required=True, help = 'The appropriate template model file to use', dest='temp_model')
     parser.add('-g', '--goal',type=str, required=True, help = 'The measure by which reads will be counted - either based on the presence of files ( -g file) or potential 2D files generated (-g 2d) or new reads generated ( -g read )', dest='goal')
     parser.add('-precision', action='store_true', help="This option will attempt to obtain exactly the number of reads required per amplicon. It is provided as a novelty to illustrate the theoretical level of control of the device. In reality it will slow down the time taken to reach a specific goal due to the possibility of reads failing and the delay in writing true reads to disk.", default=False,dest='precision')
     parser.add('-seq', '--seq-speed', type=int, default=30, required=False, help="This is the assumed sequencing speed. The default is set at 30b/s (the speed of the simulator). This should be configured to the appropriate value for your chemistry.", dest='speed')
@@ -1008,6 +814,12 @@ if __name__ == "__main__":
     global args
     args = parser.parse_args()
 
+    check_files((args.fasta,args.temp_model))
+    checkfasta(args.fasta)
+
+
+
+
     #Checking to see if depths have been set for the amplicons.
     if (len(args.customdepth) > 0 and args.depth > 0):
         print "You can only set depth (-d) or custom depth (-cd), not both! Please try again!"
@@ -1023,7 +835,7 @@ if __name__ == "__main__":
     #Check to see if folder exists.
 
     if not os.path.isdir(args.watchdir):
-        print "Sorry, but the folder "+args.watchdir+" cannot be found.\n\nPlease check you have entered the path correctly and try again.\n\nThis script will now terminate.\n"
+        print "**! Sorry, but the folder "+args.watchdir+" cannot be found.\n\n**!  Please check you have entered the path correctly and try again.\n\n**!  This script will now terminate.\n"
         die_nicely(oper)
 
 
@@ -1066,6 +878,21 @@ if __name__ == "__main__":
     if (args.verbose is True):
         print amplicons
     amplicon_file.close()
+
+    ##Checking that amplicon ids are present within the reference sequence.
+    idlist=list()
+    for record in SeqIO.parse(args.fasta, 'fasta'):
+        print record.id
+        idlist.append(record.id)
+
+    idsconcat = " ".join(idlist)
+    for amplicon in amplicons:
+        if amplicon.split(':')[0] not in idsconcat:
+            print "!** At least one amplicon is not in your reference sequence.\n\r Please check:"
+            print amplicon
+            print "!** This program will now exit.\n"
+            sys.exit()
+
     #Creating a dictionary of depths to test against for each amplicon
     global customdepthslist
     customdepthslist=list()
@@ -1193,7 +1020,12 @@ if __name__ == "__main__":
     #global kmerhashTRU
     #customfasta = get_custom_fasta(fasta_file,ranges,args)
     if args.custom is True:
-        seqids,threedarray = get_custom_fasta(fasta_file,ranges,args,model_kmer_means_template,kmer_len) #assign the reference to the hash
+        try:
+            seqids,threedarray = get_custom_fasta(fasta_file,ranges,args,model_kmer_means_template,kmer_len) #assign the reference to the hash
+        except:
+            print "\n\r!** There is a problem in generating your custom reference. This is typically because your seqeunce IDs file is using a different sequence ID to that in your reference.\n\r If your reference sequence fasta is\n\r\n\r >J02459\n\rATGTGA...\n\r\n\r then your amplicon IDS should be in the format:\n\rJ02459:52-1980\n\r"
+            print "This script will now exit.\n\r"
+            sys.exit()
         ends,starts = correctedampenddict,correctedampstartdict
     else:
         seqids,threedarray = process_ref_fasta(fasta_file,model_kmer_means_template,kmer_len) #assign the reference to the hash

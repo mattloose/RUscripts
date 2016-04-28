@@ -25,7 +25,7 @@ import logging
 import platform
 
 
-from ruutils import process_model_file,query_yes_no,send_message,process_ref_fasta,get_seq_len,squiggle_search2,extractsquig,go_or_no,genome_worker
+from ruutils import process_model_file,query_yes_no,send_message,process_ref_fasta,get_seq_len,squiggle_search2,extractsquig,go_or_no,genome_worker,check_files
 
 class LockedDict(dict):
     """
@@ -136,6 +136,8 @@ class RunningState:
     def closed(self, *args):
         self.keep_running=False
 
+
+
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     manager=multiprocessing.Manager()
@@ -176,15 +178,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     ###Check files
-
-    if not os.path.isfile(args.fasta):
-        print "\n**! The fasta file cannot be found - please check your path and file name under the -fasta option.\n"
-        sys.exit()
-
-    if not os.path.isfile(args.temp_model):
-        print "\n**! The model file cannot be found - please check your path and file name under the -model option.\n"
-        sys.exit()
-
+    check_files((args.fasta,args.temp_model))
 
     fasta_file = args.fasta
     #global seqlen

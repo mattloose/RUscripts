@@ -17,14 +17,26 @@ import psutil
 
 
 
+
+def check_files(listoffiles):
+    """
+    Supplied a list of files, this routine checks to see if they exist. If the files cannot be found, the program exits.
+    """
+    print "\n\rChecking Files..."
+    for file in listoffiles:
+        if not os.path.isfile(file):
+            print "\n\r**! One of the files you supplied cannot be found. Please check:\n\r\n\r"+str(file)+"\n\r\n\r**! This program will now exit.\n\r"
+            sys.exit()
+    print "\n\rAll OK.\n\r"
+
 def checkfasta(fasta):
     try:
-        for record in SeqIO.parse(ref_fasta, 'fasta'):
-            print recod.id
+        for record in SeqIO.parse(fasta, 'fasta'):
+            print record.id
     except:
-        print "Fasta does not appear to be valid.\n"
-        print "Please try again.\n"
-        die_nicely()
+        print "Fasta does not appear to be valid.\n\r"
+        print "This program will now exit. Please try again.\n\r"
+        sys.exit()
 
 def correctposition(value,ranges,sequence):
     correction = 0
@@ -532,7 +544,7 @@ def query_yes_no(question, default="yes"):
             return valid[choice]
         else:
             sys.stdout.write("Please respond with 'yes' or 'no' "
-                             "(or 'y' or 'n').\n")
+                             "(or 'y' or 'n').\n\r")
 
 
 def die_nicely(oper):
