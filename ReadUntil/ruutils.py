@@ -152,7 +152,7 @@ def genome_worker((channel_id, data,readstarttime,args,seqlen,seqids,threedarray
         return 'evenskip',channel_id,readnumber,data.events[0].start
     else:
         if args.verbose is True:
-            print "Odd numbered channel - yay!"
+            print "Odd numbered channel - processing!"
         try:
             squiggle = extractsquig(data.events)
             if args.verbose is True:

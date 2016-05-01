@@ -365,7 +365,7 @@ def process_hdf5((filename,seqids,threedarray,procampres,seqlen,args)):
         for event in events:
             event_collection.append(float(event[0]))
         squiggle = event_collection[50:300]
-        print seqlen
+        #print seqlen
         #squiggle,channel_id,read_id,args,seqids,threedarray,seqlen
         squiggleres = squiggle_search2(squiggle,0,0,args,seqids,threedarray,seqlen)
         if 1:
@@ -496,7 +496,7 @@ if __name__ == "__main__":
     seqids,threedarray = process_ref_fasta(fasta_file,model_kmer_means,kmer_len)
     #print "init kmerhash",type(kmerhash)
 
-    print type(threedarray)
+    #print type(threedarray)
 
     #model_file = args.temp_model
     #model_kmer_means,kmer_len=process_model_file(model_file)
