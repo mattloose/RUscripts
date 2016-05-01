@@ -26,49 +26,15 @@ import multiprocessing
 import platform
 import bisect
 sys.path.append("ReadUntil")
-from ruutils import process_model_file
+from ruutils import process_model_file,check_files,checkfasta
 
 
 
 
-global oper
-
-oper = platform.system()
-if oper is 'Windows':  # MS
-    oper = 'windows'
-else:
-    oper = 'linux'  # MS
 
 
-## linux version
-if (oper is "linux"):
-        config_file = os.path.join(os.path.sep, os.path.dirname(os.path.realpath('__file__')), 'amp.config')
-
-## linux version
-if (oper is "windows"):
-        config_file = os.path.join(os.path.sep, os.path.dirname(os.path.realpath('__file__')), 'ampW.config')
-
-__version__ = "1.0"
-__date__ = "29th March 2016"
-
-parser = configargparse.ArgParser(description='ampliconSPLIT: A program designed to identify and group individual amplicons from minION reads prior to base calling. The depth setting limits the number of reads copied to each sub folder. Developed by Matt Loose @mattloose or matt.loose@nottingham.ac.uk for help!',default_config_files=[config_file])
-parser.add('-fasta', '--reference_fasta_file', type=str, dest='fasta', required=True, default=None, help="The fasta format file for the reference sequence for your organism.")
-parser.add('-ids', '--reference_amplicon_positions', type=str, required=True, default=None, help="A file containing a list of amplicon positions defined for the reference sequence. 1 amplicon per line in the format fasta_sequence_name:start-stop e.g EM_079517:27-1938", dest='ids')
-parser.add('-w', '--watch-dir', type=str, required=True, default=None, help="The path to the folder containing the downloads directory with fast5 reads to analyse - e.g. C:\data\minion\downloads (for windows).", dest='watchdir')
-parser.add('-o', '--output-dir', type=str, required=True, default="prefiltered", help="The path to the destination folder for the preprocessed reads" , dest="targetpath")
-parser.add('-d', '--depth',type=int, required=True, default=None, help = 'The desired coverage depth for each amplicon. Note this is unlikely to be achieved for each amplicon and should probably be an overestimate of the minimum coverage required.', dest='depth')
-parser.add('-procs', '--proc_num', type=int, dest='procs',required=True, help = 'The number of processors to run this on.')
-parser.add('-t', '--template_model',type=str, required=True, help = 'The appropriate template model file to use. This file can be generated uing the getmodels.py script.', dest='temp_model')
-parser.add('-v', '--verbose-true', action='store_true', help="Print detailed messages while processing files.", default=False, dest='verbose')
-parser.add_argument('-ver', '--version', action='version',version=('%(prog)s version={version} date={date}').format(version=__version__,date=__date__))
-args = parser.parse_args()
 
 
-###########################################################
-#def memory_usage_psutil():
-#    process = psutil.Process(os.getpid())
-#    pc = round(process.memory_percent(),2)
-#    print "Mem Used %s: " % (str(pc))
 
 ###########################################################
 def make_hdf5_object_attr_hash(hdf5object, fields):
@@ -86,24 +52,10 @@ def scale(a):  # MS
    if sigma == 0: return 0
    else: return (a - mu) / sigma
 
-"""######################################################
-def process_model_file(model_file):
-	model_kmers = dict()
-	with open(model_file, 'rb') as csv_file:
-		reader = csv.reader(csv_file, delimiter="\t")
-    		d = list(reader)
-		#print d
-		for r in range(0, len(d)):
-			#print r, d[r]
-			kmer = d[r][0]
-			mean = d[r][1]
-			#print r, kmer, mean
-			model_kmers[kmer]=mean
-	return 	model_kmers
-"""
+
 ######################################################
 def get_amplicons():
-    print "Groking amplicons"
+    #print "Groking amplicons"
     if (args.verbose is True):
         print "ids is of type", type(amplicons)
     for sequence in amplicons:
@@ -134,53 +86,29 @@ def raw_squiggle_search2(squiggle,hashthang):
     #print args.speedmode
     for ref in hashthang:
         try:
-            #queryarray = sklearn.preprocessing.scale(np.array(squiggle),axis=0,with_mean=True,with_std=True,copy=True)
             queryarray = scale(squiggle)
             mx = np.max(queryarray)
             scalingFactor = 1 # iqr # 3 # 1.2 # MS
             queryarray *= scalingFactor
             dist, cost, path = mlpy.dtw_subsequence(queryarray,hashthang[ref]['Fprime'])
-            #if (args.verbose is True):
-            #    memory_usage_psutil()
             result.append((dist,ref,"F",path[1][0],path[1][-1],path[0][0],path[0][-1]))
             dist, cost, path = mlpy.dtw_subsequence(queryarray,hashthang[ref]['Rprime'])
             result.append((dist,ref,"R",(len(hashthang[ref]['Rprime'])-path[1][-1]),(len(hashthang[ref]['Rprime'])-path[1][0]),path[0][0],path[0][-1]))
-            #if (args.verbose is True):
-            #    memory_usage_psutil()
         except Exception,err:
             print "Warp Fail"
     return sorted(result,key=lambda result: result[0])[0][1],sorted(result,key=lambda result: result[0])[0][0],sorted(result,key=lambda result: result[0])[0][2],sorted(result,key=lambda result: result[0])[0][3],sorted(result,key=lambda result: result[0])[0][4],sorted(result,key=lambda result: result[0])[0][5],sorted(result,key=lambda result: result[0])[0][6]
 
 def raw_squiggle_search3(squiggle,hashthang):
     result=[]
-    #print args.speedmode
     for ref in hashthang:
         try:
-            #queryarray = sklearn.preprocessing.scale(np.array(squiggle),axis=0,with_mean=True,with_std=True,copy=True)
             queryarray=scale(squiggle)
-    #        mx = np.max(queryarray)
-    #        scalingFactor = 1 # iqr # 3 # 1.2 # MS
-    #        queryarray *= scalingFactor
-    #        dist, cost, path = mlpy.dtw_subsequence(queryarray,hashthang[ref]['Fprime'])
-            #if (args.verbose is True):
-            #    memory_usage_psutil()
-    #        result.append((dist,ref,"F",path[1][0],path[1][-1],path[0][0],path[0][-1]))
-    #        dist, cost, path = mlpy.dtw_subsequence(queryarray,hashthang[ref]['Rprime'])
-    #        result.append((dist,ref,"R",(len(hashthang[ref]['Rprime'])-path[1][-1]),(len(hashthang[ref]['Rprime'])-path[1][0]),path[0][0],path[0][-1]))
-            #if (args.verbose is True):
-            #    memory_usage_psutil()
-            #queryarray = squiggle
             dist, cost, path = mlpy.dtw_subsequence(queryarray,hashthang[ref]['Fprimewin'])
-            #print cost.mean()
-            #print "Fprime",dist,ref,"F",path[1][0],path[1][-1],path[0][0],path[0][-1],cost.mean()
             result.append((dist,ref,"F",path[1][0],path[1][-1],path[0][0],path[0][-1],cost.mean()))
             dist, cost, path = mlpy.dtw_subsequence(queryarray,hashthang[ref]['Rprimewin'])
-            #print "Rprime",dist,ref,"R",path[1][0],path[1][-1],path[0][0],path[0][-1],cost.mean()
             result.append((dist,ref,"R",(len(hashthang[ref]['Rprimewin'])-path[1][-1]),(len(hashthang[ref]['Rprimewin'])-path[1][0]),path[0][0],path[0][-1],cost.mean()))
-
         except Exception,err:
             print "Warp Fail"
-    #return sorted(result,key=lambda result: result[0])[0][1],sorted(result,key=lambda result: result[0])[0][0],sorted(result,key=lambda result: result[0])[0][2],sorted(result,key=lambda result: result[0])[0][3],sorted(result,key=lambda result: result[0])[0][4],sorted(result,key=lambda result: result[0])[0][5],sorted(result,key=lambda result: result[0])[0][6],sorted(result,key=lambda result: result[0])[0][7]
     return sorted(result,key=lambda result: result[0])[0][1],sorted(result,key=lambda result: result[0])[0][0],sorted(result,key=lambda result: result[0])[0][2],sorted(result,key=lambda result: result[0])[0][3],sorted(result,key=lambda result: result[0])[0][4],sorted(result,key=lambda result: result[0])[0][5],sorted(result,key=lambda result: result[0])[0][6]
 
 
@@ -365,9 +293,55 @@ def correctposition(value,ranges,sequence):
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+
+
+    global oper
+
+    oper = platform.system()
+    if oper is 'Windows':  # MS
+        oper = 'windows'
+    else:
+        oper = 'linux'  # MS
+
+
+    ## linux version
+    if (oper is "linux"):
+            config_file = os.path.join(os.path.sep, os.path.dirname(os.path.realpath('__file__')), 'amp.config')
+
+    ## linux version
+    if (oper is "windows"):
+            config_file = os.path.join(os.path.sep, os.path.dirname(os.path.realpath('__file__')), 'ampW.config')
+
+    __version__ = "1.1"
+    __date__ = "1st May 2016"
+
+    parser = configargparse.ArgParser(description='ampliconSPLIT: A program designed to identify and group individual amplicons from minION reads prior to base calling. The depth setting limits the number of reads copied to each sub folder. Developed by Matt Loose @mattloose or matt.loose@nottingham.ac.uk for help!',default_config_files=[config_file])
+    parser.add('-fasta', '--reference_fasta_file', type=str, dest='fasta', required=True, default=None, help="The fasta format file for the reference sequence for your organism.")
+    parser.add('-ids', '--reference_amplicon_positions', type=str, required=True, default=None, help="A file containing a list of amplicon positions defined for the reference sequence. 1 amplicon per line in the format fasta_sequence_name:start-stop e.g EM_079517:27-1938", dest='ids')
+    parser.add('-w', '--watch-dir', type=str, required=True, default=None, help="The path to the folder containing the downloads directory with fast5 reads to analyse - e.g. C:\data\minion\downloads (for windows).", dest='watchdir')
+    parser.add('-o', '--output-dir', type=str, required=True, default="prefiltered", help="The path to the destination folder for the preprocessed reads" , dest="targetpath")
+    parser.add('-d', '--depth',type=int, required=True, default=None, help = 'The desired coverage depth for each amplicon. Note this is unlikely to be achieved for each amplicon and should probably be an overestimate of the minimum coverage required.', dest='depth')
+    parser.add('-procs', '--proc_num', type=int, dest='procs',required=True, help = 'The number of processors to run this on.')
+    parser.add('-t', '--template_model',type=str, required=True, help = 'The appropriate template model file to use. This file can be generated uing the getmodels.py script.', dest='temp_model')
+    parser.add('-v', '--verbose-true', action='store_true', help="Print detailed messages while processing files.", default=False, dest='verbose')
+    parser.add_argument('-ver', '--version', action='version',version=('%(prog)s version={version} date={date}').format(version=__version__,date=__date__))
+    args = parser.parse_args()
+
+    check_files((args.fasta,args.temp_model))
+    checkfasta(args.fasta)
+
+    if not os.path.isdir(args.watchdir):
+        print "**! Sorry, but the folder "+args.watchdir+" cannot be found.\n\n**!  Please check you have entered the path correctly and try again.\n\n**!  This script will now terminate.\n"
+        sys.exit()
+
+
+
     p = multiprocessing.Pool(args.procs)
     readuntilrange = 900
     manager = multiprocessing.Manager()
+
+
+
     amplicon_file = open(args.ids, "r")
     amplicons = []
     for line in amplicon_file.readlines():
@@ -375,6 +349,22 @@ if __name__ == "__main__":
     if (args.verbose is True):
         print amplicons
     amplicon_file.close()
+
+    ##Checking that amplicon ids are present within the reference sequence.
+    idlist=list()
+    for record in SeqIO.parse(args.fasta, 'fasta'):
+        print record.id
+        idlist.append(record.id)
+
+    idsconcat = " ".join(idlist)
+    for amplicon in amplicons:
+        if amplicon.split(':')[0] not in idsconcat:
+            print "!** At least one amplicon is not in your reference sequence.\n\r Please check:"
+            print amplicon
+            print "!** This program will now exit.\n"
+            sys.exit()
+
+
     fasta_file = args.fasta
     model_file_template = args.temp_model
 

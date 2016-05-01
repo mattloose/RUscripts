@@ -46,7 +46,7 @@ from ruutils import file_dict_of_folder,scaleLocally,scale,merge_ranges,correctp
 
 def get_amplicons(amplicons,seqlengths,args):
     if (args.verbose is True):
-        print "Groking amplicons"
+        #print "Groking amplicons"
         print "ids is of type", type(amplicons)
     for sequence in amplicons:
         if (args.verbose is True):
