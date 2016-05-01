@@ -25,7 +25,7 @@ import glob
 import h5py
 import platform
 
-from ruutils import process_model_file,check_files,checkfasta
+from ruutils import process_model_file,check_files,checkfasta,process_ref_fasta,squiggle_search2,go_or_no
 
 
 ######################################################
@@ -61,7 +61,7 @@ def process_ref_fasta2(ref_fasta,model_kmer_means):
     return kmer_means
 #######################################################################
 
-def process_ref_fasta(ref_fasta,model_kmer_means,seqlen,kmerlen):
+def process_ref_fasta_orig(ref_fasta,model_kmer_means,seqlen,kmerlen):
     print "processing the reference fasta."
     kmer_len=kmerlen
     kmer_means=dict()
@@ -202,7 +202,7 @@ def squiggle_search(squiggle,kmerhash,channel_id,read_id,seqlen):
 
 
 #######################################################################
-def squiggle_search2(squiggle,kmerhash,seqlen):
+def squiggle_search2_old(squiggle,kmerhash,seqlen):
     result=[]
 
     for ref in kmerhash:
@@ -214,7 +214,9 @@ def squiggle_search2(squiggle,kmerhash,seqlen):
         dist, cost, path = mlpy.dtw_subsequence(queryarray,kmerhash[ref]['Rprime'])
         result.append((dist,ref,"R",path[1][0],ref,path[1][-1]))
 
-
+    #('J02459', 41.017514495176989, 'F', 10003, 'J02459', 10198)
+    #distanceR,seqmatchnameR,frR,rsR,reR,qsR,qeR=sorted(result,key=lambda result: result[0])[0]
+    #return seqmatchnameR,distanceR,frR,rsR,reR,qsR,qeR
     return sorted(result,key=lambda result: result[0])[0][1],sorted(result,key=lambda result: result[0])[0][0],sorted(result,key=lambda result: result[0])[0][2],sorted(result,key=lambda result: result[0])[0][3],sorted(result,key=lambda result: result[0])[0][4],sorted(result,key=lambda result: result[0])[0][5]
 
 ######################################################################
@@ -246,7 +248,40 @@ class LockedDict(dict):
             return d
 
 #######################################################################
-def go_or_no(seqid,direction,position,seqlen,args):
+def go_or_no2(seqid,direction,position,seqlen,args,distance,refmatchlen,querymatchlen):
+    #print "GO OR NO GO"
+    for sequence in args.targets:
+        #print "IN args.targets"
+        #print sequence
+        start = int(float(sequence.split(':', 1 )[1].split('-',1)[0]))
+        stop = int(float(sequence.split(':', 1 )[1].split('-',1)[1]))
+        length = seqlen[seqid]
+
+        #print "start",start,"stop",stop,"length",length,"direction",direction,"position",position
+        #We note that the average template read length is 6kb for the test lambda dataset. Therefore we are interested in reads which start at least 3kb in advance of our position of interest
+        balance = 3000
+        #print "Balance SET"
+        if seqid.find(sequence.split(':', 1 )[0]) >= 0:
+        #    print "Found it"
+            if direction == "F":
+        #        print "Forward Strand"
+        #        print position, (start-balance),stop
+                if position >= ( start - balance ) and position <= stop:
+        #            print "RETURNING SEQUENCE"
+                    return "Sequence"
+            elif direction == "R":
+                if position >= ( length - stop - balance) and position <= ( length - start ):
+                    #print "Reverse Strand"
+        #            print "Returning SEQUENCE"
+                    return "Sequence"
+        #else:
+        #    print "seqID find loop failed"
+    #print "Returning SKIP"
+    return "Skip"
+
+
+#######################################################################
+def go_or_no_old(seqid,direction,position,seqlen,args):
     #print "GO OR NO GO"
     for sequence in args.targets:
         #print "IN args.targets"
@@ -321,7 +356,7 @@ def mp_worker((channel_id, data,kmerhash,seqlen,readstarttime,kmerhash_subset)):
 
 
 
-def process_hdf5((filename,kmerhash_subset,procampres,seqlen,args)):
+def process_hdf5((filename,seqids,threedarray,procampres,seqlen,args)):
     returndict=dict()
     hdf = h5py.File(filename, 'r')
     for read in hdf['Analyses']['EventDetection_000']['Reads']:
@@ -330,10 +365,15 @@ def process_hdf5((filename,kmerhash_subset,procampres,seqlen,args)):
         for event in events:
             event_collection.append(float(event[0]))
         squiggle = event_collection[50:300]
-        squiggleres = squiggle_search2(squiggle,kmerhash_subset,len(squiggle))
+        print seqlen
+        #squiggle,channel_id,read_id,args,seqids,threedarray,seqlen
+        squiggleres = squiggle_search2(squiggle,0,0,args,seqids,threedarray,seqlen)
         if 1:
             print squiggleres[0],squiggleres[2],squiggleres[3]
             try:
+                #seqid,direction,position,seqlen,args,distance,refmatchlen,querymatchlen
+                #print squiggleres
+                #result = go_or_no2(squiggleres[0],squiggleres[2],squiggleres[3],seqlen,args,squiggleres[1],0,0)
                 result = go_or_no(squiggleres[0],squiggleres[2],squiggleres[3],seqlen,args)
             except Exception,err:
                 print "ERROR"
@@ -419,8 +459,8 @@ if __name__ == "__main__":
     if (oper is "windows"):
             config_file = os.path.join(os.path.sep, os.path.dirname(os.path.realpath('__file__')), 'ampW.config')
 
-    __version__ = "1.0"
-    __date__ = "30th March 2016"
+    __version__ = "1.1"
+    __date__ = "1st May 2016"
 
     parser = configargparse.ArgParser(description='real_read_until: A program providing read until with the Oxford Nanopore minION device. This program will ultimately be driven by minoTour to enable selective remote sequencing. This program is heavily based on original code generously provided by Oxford Nanopore Technologies.')
     parser.add('-fasta', '--reference_fasta_file', type=str, dest='fasta', required=True, default=None, help="The fasta format file describing the reference sequence for your organism.")
@@ -429,6 +469,7 @@ if __name__ == "__main__":
     parser.add('-m', '--model',type=str, required=True, help = 'The appropriate template model file to use', dest='temp_model')
     parser.add('-log', '--log-file', type=str, dest='logfile', default='readuntil.log', help="The name of the log file that data will be written to regarding the decision made by this program to process read until.")
     parser.add('-w', '--watch-dir', type=str, required=True, default=None, help="The path to the folder containing the downloads directory with fast5 reads to analyse - e.g. C:\data\minion\downloads (for windows).", dest='watchdir')
+    parser.add('-length', '--library-length', type=int, dest='length', required=False, default=0, help="Provide the average expected length of your library. This offset will be applied to reads that are likely to extend into your region of interest on either strand.")
     parser.add('-o', '--output', type=str, required=False, default='test_read_until_out', help="Path to a folder to symbolically place reads representing match and not match.", dest='output_folder')
     parser.add('-v', '--verbose-true', action='store_true', help="Print detailed messages while processing files.", default=False, dest='verbose')
     parser.add_argument('-ver', '--version', action='version',version=('%(prog)s version={version} date={date}').format(version=__version__,date=__date__))
@@ -449,10 +490,19 @@ if __name__ == "__main__":
     seqlen = get_seq_len(fasta_file)
 
     model_file = args.temp_model
+    global model_kmer_means
+    global kmer_len
     model_kmer_means,kmer_len=process_model_file(model_file)
+    seqids,threedarray = process_ref_fasta(fasta_file,model_kmer_means,kmer_len)
+    #print "init kmerhash",type(kmerhash)
+
+    print type(threedarray)
+
+    #model_file = args.temp_model
+    #model_kmer_means,kmer_len=process_model_file(model_file)
 
     #kmerhash_subset = process_ref_fasta_subset(fasta_file,model_kmer_means,seqlen,kmer_len)
-    kmerhash_subset = process_ref_fasta(fasta_file,model_kmer_means,seqlen,kmer_len)
+    #kmerhash_subset = process_ref_fasta(fasta_file,model_kmer_means,seqlen,kmer_len)
 
     #sys.exit()
 
@@ -461,15 +511,15 @@ if __name__ == "__main__":
     for filename in glob.glob(os.path.join(args.watchdir, '*.fast5')):
         filenamecounter+=1
         #print filename
-        d.append([filename,kmerhash_subset,procampres,seqlen,args])
+        d.append([filename,seqids,threedarray,procampres,seqlen,args])
     for filename in glob.glob(os.path.join(args.watchdir, "pass",'*.fast5')):
         filenamecounter+=1
         #print filename
-        d.append([filename,kmerhash_subset,procampres,seqlen,args])
+        d.append([filename,seqids,threedarray,procampres,seqlen,args])
     for filename in glob.glob(os.path.join(args.watchdir, "fail",'*.fast5')):
         filenamecounter+=1
         #print filename
-        d.append([filename,kmerhash_subset,procampres,seqlen,args])
+        d.append([filename,seqids,threedarray,procampres,seqlen,args])
     procdata=tuple(d)
 
     results=[]

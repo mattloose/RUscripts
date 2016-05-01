@@ -193,7 +193,8 @@ def go_or_no(seqid,direction,position,seqlen,args):
                     return "Sequence"
             elif direction == "R":
                 if args.verbose is True: print "Reverse Strand"
-                if position >= ( length - stop - balance) and position <= ( length - start ):
+                if position >= ( start - balance ) and position <= stop:
+                #if position >= ( length - stop - balance) and position <= ( length - start ):
                     return "Sequence"
     return "Skip"
 
@@ -226,11 +227,11 @@ def squiggle_search2(squiggle,channel_id,read_id,args,seqids,threedarray,seqlen)
             dist, cost, path = mlpy.dtw_subsequence(queryarray,ref_)
             #result.append((dist,ref,"F",path[1][0],path[1][-1],path[0][0],path[0][-1]))
             result.append((dist,ref,"F",path[1][0]+(blockid*overlap),path[1][-1]+(blockid*overlap),path[0][0],path[0][-1]))
-            print "Blockid", blockid, time.time()-tic
+            #print "Blockid", blockid, time.time()-tic
         refsubset = Rprime
         subrefs = [refsubset[i:i+blocksize]for i in indexes[::overlap]]
         for blockid,ref_ in enumerate(subrefs):
-            print "Blockid", blockid, time.time()
+            #print "Blockid", blockid, time.time()
             dist, cost, path = mlpy.dtw_subsequence(queryarray,ref_)
             #result.append((dist,ref,"R",path[1][0]+(blockid*overlap),ref))
             result.append((dist,ref,"R",(len(Rprime)-(path[1][-1]+(blockid*overlap))),(len(Rprime)-(path[1][0]+(blockid*overlap))),path[0][0],path[0][-1]))
