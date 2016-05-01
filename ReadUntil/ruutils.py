@@ -193,6 +193,8 @@ def go_or_no(seqid,direction,position,seqlen,args):
                     return "Sequence"
             elif direction == "R":
                 if args.verbose is True: print "Reverse Strand"
+                ### We assume that coordinates are reported with respect to the forward strand regardless of
+                ### wether you are matching to forward or reverse.
                 if position >= ( start - balance ) and position <= stop:
                 #if position >= ( length - stop - balance) and position <= ( length - start ):
                     return "Sequence"
@@ -210,6 +212,11 @@ def extractsquig(events):
 
 
 def squiggle_search2(squiggle,channel_id,read_id,args,seqids,threedarray,seqlen):
+    '''
+    This function matches an incoming squiggle to a reference. Coordinates are returned with respect to the forward
+    strand only. This is important to recall for subsequent downstream processing. Thus a read which is reported as
+    mapping to the reverse strand will report its coodinates on the forward strand.
+    '''
     result=[]
     blocksize=200000
     overlap=blocksize-500
@@ -234,7 +241,10 @@ def squiggle_search2(squiggle,channel_id,read_id,args,seqids,threedarray,seqlen)
             #print "Blockid", blockid, time.time()
             dist, cost, path = mlpy.dtw_subsequence(queryarray,ref_)
             #result.append((dist,ref,"R",path[1][0]+(blockid*overlap),ref))
-            result.append((dist,ref,"R",(len(Rprime)-(path[1][-1]+(blockid*overlap))),(len(Rprime)-(path[1][0]+(blockid*overlap))),path[0][0],path[0][-1]))
+            #result.append((dist,ref,"R",path[1][0]+(blockid*overlap),path[1][-1]+(blockid*overlap),path[0][0],path[0][-1]))
+            #result.append((dist,ref,"R",(len(Rprime)-(path[1][-1]+(blockid*overlap))),(len(Rprime)-(path[1][0]+(blockid*overlap))),path[0][0],path[0][-1]))
+            #Corrected for the fact that this is a reverse complement
+            result.append((dist,ref,"R",(len(Rprime)-(path[1][0]+(blockid*overlap))),(len(Rprime)-(path[1][-1]+(blockid*overlap))),path[0][0],path[0][-1]))
     # Note first two elements flipped for return deliberately.
     distanceR,seqmatchnameR,frR,rsR,reR,qsR,qeR=sorted(result,key=lambda result: result[0])[0]
     return seqmatchnameR,distanceR,frR,rsR,reR,qsR,qeR
