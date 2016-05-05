@@ -53,29 +53,63 @@ def run_analysis(args,analyser):
                         "events_length": 250, "repetitions": 1}
 
     state=RunningState()
-    with ReadUntil(host=host,
+    print "Initialising Read Until"
+    try:
+        with ReadUntil(host=host,
                    setup_conditions=setup_conditions,
                    data_received=analyser.apply_async_with_callback,
                    connection_closed=state.closed) as my_client:
-        try:
-            my_client.start()
-        except Exception,err:
-            print err
-        print "Client connection started. Beginning unblock loop..."
-        while state.keep_running:
-            print "looping"
-            unblock_now = analyser.next_unblock_map()
-            if len(unblock_now)>0:
-                if args.verbose is True: print "Unblocking channels: ", unblock_now.keys()
-                print time.strftime('%Y-%m-%d %H:%M:%S'),
-                print "Unblocking ",len(unblock_now.keys())
-                my_client.unblock(unblock_now)
+            print "Trying to connect"
+            try:
+                my_client.start()
+            except Exception,err:
+                print err
+            print "Client connection started. Beginning unblock loop..."
+            while state.keep_running:
+                print "looping"
+                try:
+                    unblock_now = analyser.next_unblock_map()
+                except Exception,err:
+                    print err
+                    print "caught a connection fault - reads not unblocked"
+                if len(unblock_now)>0:
+                    if args.verbose is True: print "Unblocking channels: ", unblock_now.keys()
+                    print time.strftime('%Y-%m-%d %H:%M:%S'),
+                    print "Unblocking ",len(unblock_now.keys())
+                    my_client.unblock(unblock_now)
 
-            # Throttle rate at which we make unblock controls. Although
-            # unblocks should be timely, it is more efficient on the network
-            # and on the hardware to unblock a bigger list of channels at once.
-            time.sleep(1)
-        print "...unblock loop ended. Connection closed."
+                # Throttle rate at which we make unblock controls. Although
+                # unblocks should be timely, it is more efficient on the network
+                # and on the hardware to unblock a bigger list of channels at once.
+                time.sleep(1)
+            print "...unblock loop ended. Connection closed."
+    except Exception,err:
+        print err
+        print "Problem - ws_event_sampler either crashed or not initialised. Please check your setup."
+
+    # with ReadUntil(host=host,
+    #                setup_conditions=setup_conditions,
+    #                data_received=analyser.apply_async_with_callback,
+    #                connection_closed=state.closed) as my_client:
+    #     try:
+    #         my_client.start()
+    #     except Exception,err:
+    #         print err
+    #     print "Client connection started. Beginning unblock loop..."
+    #     while state.keep_running:
+    #         print "looping"
+    #         unblock_now = analyser.next_unblock_map()
+    #         if len(unblock_now)>0:
+    #             if args.verbose is True: print "Unblocking channels: ", unblock_now.keys()
+    #             print time.strftime('%Y-%m-%d %H:%M:%S'),
+    #             print "Unblocking ",len(unblock_now.keys())
+    #             my_client.unblock(unblock_now)
+    #
+    #         # Throttle rate at which we make unblock controls. Although
+    #         # unblocks should be timely, it is more efficient on the network
+    #         # and on the hardware to unblock a bigger list of channels at once.
+    #         time.sleep(1)
+    #     print "...unblock loop ended. Connection closed."
 
 class MyAnalyser:
     """
